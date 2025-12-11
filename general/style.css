@@ -1,0 +1,142 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+    list-style: none;
+}
+
+body {
+    background: #f3f5f9;
+    color: #333;
+}
+
+/* ====== LAYOUT === */
+.layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ===== SIDEBAR === */
+.sidebar {
+    width: 240px;
+    background: #e0ebff; 
+    padding: 25px 20px;
+    border-right: 1px solid #d3dff1;
+}
+
+.sidebar h2 {
+    margin-bottom: 30px;
+    font-size: 26px;
+    font-weight: 600;
+    color: #2053a3;
+}
+
+.sidebar ul li {
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.25s;
+}
+
+.sidebar ul li:hover {
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.sidebar ul .active {
+    background: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+/* Logout Button */
+.logout-btn {
+    max-width: 160px;
+    width: 100%;
+    margin: 20px auto;
+    padding: 8px 20px;
+    background: #ffeded;
+    border: 1px solid #ffbaba;
+    color: #c62828;
+    font-weight: 500;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.25s;
+    text-align: center;
+}
+
+.logout-btn:hover {
+    background: #ffdad8;
+    border-color: #ff8a80;
+}
+
+.logout-btn:active {
+    background: #ffc1c1;
+}
+
+/* Giúp nút nằm cuối sidebar */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar ul {
+    flex: 1;
+}
+
+
+/* ===== Content Main === */
+.content {
+    flex: 1;
+    padding: 10px 30px 25px;
+}
+
+/* ===== HEADER  === */
+.top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: lightgray;
+    padding: 5px 5px 5px 15px;
+    border-radius: 30px;
+}
+
+.top-bar p {
+    font-size: 15px;
+    color: #555;
+}
+
+/* USER BOX */
+.user-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 5px 12px;
+    background: #fff;
+    border-radius: 30px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #2053a3;
+}
+
+.username {
+    font-size: 15px;
+    font-weight: 500;
+    color: #333;
+}
+
+.user-box:hover {
+    background: #f0f4ff;
+    cursor: pointer;
+    transition: 0.25s;
+}
