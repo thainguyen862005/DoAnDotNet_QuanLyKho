@@ -1,0 +1,24 @@
+@inherits LayoutComponentBase
+
+<div class="d-flex">
+    <!-- Sidebar -->
+    <StaffSidebar />
+
+    <!-- Main -->
+    <div class="flex-grow-1">
+        <!-- Header -->
+        <header class="staff-header shadow-sm px-4 py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">NHÂN VIÊN KHO</h5>
+
+            <div class="d-flex align-items-center gap-2">
+                <img src="/images/user.png" class="avatar" />
+                <span>Staff</span>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="p-4">
+            @Body
+        </main>
+    </div>
+</div>

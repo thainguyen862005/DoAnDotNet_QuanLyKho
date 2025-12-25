@@ -1,0 +1,150 @@
+@inject NavigationManager Navigation
+
+<nav class="nav flex-column p-3 min-vh-100 sidebar">
+
+    <h5 class="text-center mb-4 border-bottom pb-2">ADMIN</h5>
+
+    <NavLink class="nav-link sidebar-link" href="/admin/dashboard" Match="NavLinkMatch.All">
+        📊 Dashboard
+    </NavLink>
+
+    <NavLink class="nav-link sidebar-link" href="/admin/products">
+        📦 Quản lý sản phẩm
+    </NavLink>
+
+    <NavLink class="nav-link sidebar-link" href="/admin/import">
+        ➕ Nhập kho
+    </NavLink>
+
+    <NavLink class="nav-link sidebar-link" href="/admin/export">
+        ➖ Xuất kho
+    </NavLink>
+
+    <NavLink class="nav-link sidebar-link" href="/admin/inventory">
+        📋 Tồn kho
+    </NavLink>
+
+    <NavLink class="nav-link sidebar-link" href="/admin/reports">
+        📈 Biểu đồ
+    </NavLink>
+
+    <!-- LOGOUT -->
+    <div class="mt-auto">
+        <hr class="text-secondary">
+
+        <NavLink href="/login" class="logout-btn">
+            🚪 Đăng xuất
+        </NavLink>
+
+
+
+
+    </div>
+
+</nav>
+<style>
+    /* SIDEBAR */
+    .sidebar {
+        background-color: #212529;
+    }
+    .text-center {
+    text-align: center !important;
+    COLOR: white;
+}
+
+     
+    .sidebar-link {
+        color: #dee2e6;
+        border-radius: 6px;
+        margin-bottom: 6px;
+        padding: 10px 12px;
+        transition: all 0.2s ease;
+    }
+
+    .sidebar-item.logout:hover {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .sidebar-item.logout {
+        text-decoration: none;
+    }
+
+    .logout-btn {
+        display: block;
+        width: 100%;
+
+        padding: 12px 16px;
+        margin-top: 12px;
+
+        text-align: center;
+        font-weight: 500;
+        border-radius: 8px;
+        text-decoration: none;
+
+        color: #dc3545;
+        border: 1px solid #dc3545;
+        background-color: transparent;
+
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    /* Hover */
+    .logout-btn:hover {
+        background-color: #dc3545;
+        color: #fff;
+    }
+
+    /* Focus   */
+    .logout-btn:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.4);
+    }
+
+    /* Active   */
+    .logout-btn:active {
+        transform: scale(0.97);
+    }
+
+
+    /* Hover */
+    .sidebar-link:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+        color: #fff;
+    }
+
+    /* Active -đang chọn  */
+    .sidebar-link.active {
+        background-color: #0d6efd;
+        color: #fff;
+        font-weight: 500;
+    }
+
+    /* Focus -tab keyboard */
+    .sidebar-link:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.5);
+    }
+
+    /* LOGOUT BUTTON */
+    .btn-logout {
+        border: 1px solid #dc3545;
+        color: #dc3545;
+        background-color: transparent;
+        transition: all 0.2s ease;
+    }
+
+    .btn-logout:hover {
+        background-color: #dc3545;
+        color: #fff;
+    }
+</style>
+
+
+@code {
+    void Logout()
+    {
+        Navigation.NavigateTo("/login", true);
+    }
+}

@@ -1,0 +1,63 @@
+@page "/login"
+@layout MainLayout
+@rendermode InteractiveServer
+@inject NavigationManager Nav
+
+<div class="login-container">
+    <div class="login-card">
+        <h1 class="welcome-text">Welcome</h1>
+        
+        <div class="logo-box">T<span>-Warehouse</span></div>
+
+        <form @onsubmit="HandleLogin" @onsubmit:preventDefault="true">
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" @bind="email" placeholder="nguyenvana@example.com" required>
+                <div class="underline"></div>
+            </div>
+
+            <div class="input-group">
+                <label>Password</label>
+                 
+                    <input type="password" @bind="password" placeholder="Password" required>
+                    
+                    <div class="underline"></div> 
+                
+            </div>
+
+           <button type="submit" class="login-button" @onclick="HandleLogin">Login</button>
+        </form>
+
+        <p class="footer-text">
+            Don't have an account? <a href="#">Sign Up</a>
+        </p>
+    </div>
+</div>
+
+
+@code {
+    string email = "";  
+    string password = "";
+    string error = "";
+    bool showPassword = false;
+
+    void TogglePassword() => showPassword = !showPassword;
+
+    void HandleLogin()
+    {
+        // Kiểm tra logic theo email
+        if (email == "admin@gmail.com" && password == "123")
+        {
+            Nav.NavigateTo("/Admin/Dashboard");
+        }
+        else if (email == "staff@gmail.com" && password == "123")
+        {
+            Nav.NavigateTo("/Staff/Import");
+        }
+        else
+        {
+            error = "Email hoặc mật khẩu không chính xác";
+        }
+    }
+
+}
