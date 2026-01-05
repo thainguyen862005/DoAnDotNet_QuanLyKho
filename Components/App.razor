@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <ResourcePreloader />
-    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
-    <link rel="stylesheet" href="@Assets["app.css"]" />
-    <link rel="stylesheet" href="@Assets["QuanLyKho.styles.css"]" />
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="QuanLyKho.styles.css" />
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet />
@@ -35,14 +35,18 @@
             bgExport.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
 
             if (config.data.datasets.length > 0) {
-                config.data.datasets[0].borderColor = colorImportBase;
-                config.data.datasets[0].pointBackgroundColor = "#fff";
-                config.data.datasets[0].pointBorderColor = colorImportBase;
-                config.data.datasets[0].backgroundColor = type === 'line' ? bgImport : colorImportBase;
-                config.data.datasets[1].borderColor = colorExportBase;
-                config.data.datasets[1].pointBackgroundColor = "#fff";
-                config.data.datasets[1].pointBorderColor = colorExportBase;
-                config.data.datasets[1].backgroundColor = type === 'line' ? bgExport : colorExportBase;
+                if (config.data.datasets[0]) {
+                    config.data.datasets[0].borderColor = colorImportBase;
+                    config.data.datasets[0].pointBackgroundColor = "#fff";
+                    config.data.datasets[0].pointBorderColor = colorImportBase;
+                    config.data.datasets[0].backgroundColor = type === 'line' ? bgImport : colorImportBase;
+                }
+                if (config.data.datasets[1]) {
+                    config.data.datasets[1].borderColor = colorExportBase;
+                    config.data.datasets[1].pointBackgroundColor = "#fff";
+                    config.data.datasets[1].pointBorderColor = colorExportBase;
+                    config.data.datasets[1].backgroundColor = type === 'line' ? bgExport : colorExportBase;
+                }
             }
 
             if (window.myChartInstance) {
@@ -51,7 +55,21 @@
 
             window.myChartInstance = new Chart(ctx, config);
         }
+
+        window.setupPieChart = (canvasId, config) => {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            if (window.pieChartInstance) window.pieChartInstance.destroy();
+            window.pieChartInstance = new Chart(ctx, config);
+        }
+
+        window.downloadFile = (fileName, content) => {
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = "data:text/csv;charset=utf-8,%EF%BB%BF" + encodeURIComponent(content);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     </script>
 </body>
-
 </html>

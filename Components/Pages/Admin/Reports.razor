@@ -1,16 +1,35 @@
 @page "/admin/reports"
 @layout AdminLayout
+@using Microsoft.AspNetCore.Components.Web
 @rendermode InteractiveServer
 @using Microsoft.JSInterop
+@using System.Collections.Generic
+@using System.Linq
+
 @inject IJSRuntime JS
 
 <PageTitle>Báo cáo thống kê</PageTitle>
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold text-dark">📈 Analytics Center</h3>
+<div class="container-fluid pb-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <h3 class="fw-bold text-dark mb-0">📈 Analytics Center</h3>
 
-        <div class="d-flex gap-3">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+
+            @if (viewMode == "custom")
+            {
+                <div class="d-flex gap-2 bg-white p-1 rounded-pill shadow-sm border align-items-center px-3">
+                    <input type="date" class="form-control form-control-sm border-0" style="width: 130px;" @bind="fromDate" />
+                    <span class="text-muted fw-bold">-</span>
+                    <input type="date" class="form-control form-control-sm border-0" style="width: 130px;" @bind="toDate" />
+                    <button class="btn btn-sm btn-primary rounded-circle" @onclick="LoadCustomData">🔍</button>
+                </div>
+            }
+
+            <button class="btn btn-success btn-sm rounded-pill px-3 shadow-sm fw-bold" @onclick="ExportToExcel">
+                📥 Xuất Excel
+            </button>
+
             <div class="btn-group shadow-sm bg-white rounded-pill p-1">
                 <button class="btn btn-sm rounded-pill px-3 fw-bold @(chartType == "bar" ? "btn-primary" : "btn-light text-muted")"
                         @onclick='() => ChangeChartType("bar")'>
@@ -35,6 +54,10 @@
                         @onclick='() => ChangeView("year")'>
                     Năm
                 </button>
+                <button class="btn btn-sm rounded-pill px-3 @(viewMode == "custom" ? "btn-dark" : "btn-white text-muted")"
+                        @onclick='() => ChangeView("custom")'>
+                    Tùy chỉnh
+                </button>
             </div>
         </div>
     </div>
@@ -48,24 +71,61 @@
 
                 <div class="d-flex gap-4">
                     <div class="d-flex align-items-center">
-                        <span class="rounded-circle me-2"
-                              style="width: 12px; height: 12px; background-color: #3b82f6;">
-                        </span>
+                        <span class="rounded-circle me-2" style="width: 12px; height: 12px; background-color: #3b82f6;"></span>
                         <span class="fw-bold text-secondary" style="font-size: 13px;">Nhập kho</span>
                     </div>
 
                     <div class="d-flex align-items-center">
-                        <span class="rounded-circle me-2"
-                              style="width: 12px; height: 12px; background-color: #ef4444;">
-                        </span>
+                        <span class="rounded-circle me-2" style="width: 12px; height: 12px; background-color: #ef4444;"></span>
                         <span class="fw-bold text-secondary" style="font-size: 13px;">Xuất kho</span>
                     </div>
                 </div>
-
             </div>
 
             <div style="height: 450px;">
                 <canvas id="inventoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 h-100" style="border-radius: 16px;">
+                <div class="card-body">
+                    <h6 class="fw-bold text-dark mb-3">🏆 Top 5 Sản Phẩm Tiêu Biểu</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="bg-light text-secondary small">
+                                <tr>
+                                    <th class="border-0 rounded-start">Sản phẩm</th>
+                                    <th class="border-0 text-center">Số lượng</th>
+                                    <th class="border-0 text-end rounded-end">Doanh thu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var prod in topProducts)
+                                {
+                                    <tr>
+                                        <td class="fw-bold text-dark">@prod.Name</td>
+                                        <td class="text-center"><span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">@prod.Quantity</span></td>
+                                        <td class="text-end fw-bold text-success">@prod.Revenue.ToString("N0") ₫</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100" style="border-radius: 16px;">
+                <div class="card-body">
+                    <h6 class="fw-bold text-dark mb-3">🍰 Tỷ Lệ Danh Mục</h6>
+                    <div style="height: 250px; position: relative;">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -101,20 +161,53 @@
     private string chartType = "line";
     private double TotalImport = 0;
     private double TotalExport = 0;
+    private DateTime fromDate = DateTime.Now.AddDays(-30);
+    private DateTime toDate = DateTime.Now;
+    public class ProductInfo
+    {
+        public string Name { get; set; } = "";
+        public int Quantity { get; set; }
+        public double Revenue { get; set; }
+    }
+
+    private List<ProductInfo> topProducts = new();
+    protected override void OnInitialized()
+    {
+        topProducts = new List<ProductInfo>
+        {
+            new ProductInfo { Name = "iPhone 15 Pro", Quantity = 120, Revenue = 3600000000 },
+            new ProductInfo { Name = "Samsung S24", Quantity = 95, Revenue = 2800000000 },
+            new ProductInfo { Name = "MacBook M2", Quantity = 80, Revenue = 2000000000 },
+            new ProductInfo { Name = "Sony XM5", Quantity = 150, Revenue = 1050000000 },
+            new ProductInfo { Name = "iPad Gen 10", Quantity = 200, Revenue = 1800000000 }
+        };
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await RenderChart();
+        if (firstRender || viewMode != "")
+        {
+            await RenderPieChart();
+        }
     }
 
     private async Task ChangeView(string mode)
     {
         viewMode = mode;
+        StateHasChanged();
+        await RenderChart();
     }
 
     private async Task ChangeChartType(string type)
     {
         chartType = type;
+        await RenderChart();
+    }
+
+    private async Task LoadCustomData()
+    {
+        await RenderChart();
     }
 
     private string GetCurrentModeName() => viewMode switch
@@ -122,8 +215,22 @@
         "day" => "7 ngày gần nhất",
         "month" => "12 tháng",
         "year" => "5 năm",
+        "custom" => $"{fromDate:dd/MM} - {toDate:dd/MM}",
         _ => ""
     };
+
+    private async Task ExportToExcel()
+    {
+        var (labels, dataImport, dataExport) = GetDataByMode(viewMode);
+
+        var csv = "ThoiGian,NhapKho,XuatKho\n";
+        for (int i = 0; i < labels.Length; i++)
+        {
+            csv += $"{labels[i]},{dataImport[i]},{dataExport[i]}\n";
+        }
+
+        await JS.InvokeVoidAsync("downloadFile", $"BaoCao_{DateTime.Now:yyyyMMdd_HHmmss}.csv", csv);
+    }
 
     private async Task RenderChart()
     {
@@ -147,13 +254,10 @@
                         fill = isLine,
                         tension = 0.4,
                         pointRadius = isLine ? 4 : 0,
-                        pointHoverRadius = 8,
-                        pointBorderWidth = 2,
-                        borderWidth = 3,
-
-                        borderRadius = 8,
-                        barPercentage = 0.6,
-                        categoryPercentage = 0.7
+                        backgroundColor = isLine ? "rgba(59, 130, 246, 0.2)" : "#3b82f6",
+                        borderColor = "#3b82f6",
+                        borderWidth = 2,
+                        borderRadius = 4
                     },
                     new {
                         label = "Xuất kho",
@@ -161,13 +265,10 @@
                         fill = isLine,
                         tension = 0.4,
                         pointRadius = isLine ? 4 : 0,
-                        pointHoverRadius = 8,
-                        pointBorderWidth = 2,
-                        borderWidth = 3,
-
-                        borderRadius = 8,
-                        barPercentage = 0.6,
-                        categoryPercentage = 0.7
+                        backgroundColor = isLine ? "rgba(239, 68, 68, 0.2)" : "#ef4444",
+                        borderColor = "#ef4444",
+                        borderWidth = 2,
+                        borderRadius = 4
                     }
                 }
             },
@@ -175,40 +276,12 @@
             {
                 responsive = true,
                 maintainAspectRatio = false,
-                plugins = new
-                {
-                    legend = new { display = false },
-                    tooltip = new
-                    {
-                        backgroundColor = "rgba(0,0,0, 0.8)",
-                        titleFont = new { size = 13 },
-                        bodyFont = new { size = 13, weight = "bold" },
-                        padding = 10,
-                        cornerRadius = 8,
-                        displayColors = true,
-                        usePointStyle = true,
-                        intersect = false,
-                        mode = "index",
-                    }
-                },
+                plugins = new { legend = new { display = false } },
+                interaction = new { mode = "index", intersect = false },
                 scales = new
                 {
-                    y = new
-                    {
-                        beginAtZero = true,
-                        grid = new { color = "#f0f2f5", borderDash = new[] { 5, 5 } },
-                        border = new { display = false }
-                    },
-                    x = new
-                    {
-                        grid = new { display = false },
-                        border = new { display = false }
-                    }
-                },
-                interaction = new
-                {
-                    mode = "index",
-                    intersect = false,
+                    y = new { beginAtZero = true, grid = new { color = "#f3f4f6" }, border = new { display = false } },
+                    x = new { grid = new { display = false }, border = new { display = false } }
                 }
             }
         };
@@ -216,10 +289,41 @@
         await JS.InvokeVoidAsync("setupChart", "inventoryChart", config);
     }
 
+    private async Task RenderPieChart()
+    {
+        var config = new
+        {
+            type = "doughnut",
+            data = new
+            {
+                labels = new[] { "Điện tử", "Gia dụng", "Thời trang", "Khác" },
+                datasets = new[]
+                {
+                    new {
+                        data = new[] { 40, 25, 20, 15 },
+                        backgroundColor = new[] { "#3b82f6", "#10b981", "#f59e0b", "#9ca3af" },
+                        borderWidth = 0,
+                        hoverOffset = 4
+                    }
+                }
+            },
+            options = new
+            {
+                responsive = true,
+                maintainAspectRatio = false,
+                plugins = new { legend = new { position = "right" } },
+                cutout = "75%"
+            }
+        };
+
+        await JS.InvokeVoidAsync("setupPieChart", "categoryChart", config);
+    }
+
     private (string[], double[], double[]) GetDataByMode(string mode)
     {
         if (mode == "day") return (new[] { "T2", "T3", "T4", "T5", "T6", "T7", "CN" }, new double[] { 50, 20, 15, 40, 60, 10, 5 }, new double[] { 30, 25, 10, 20, 45, 15, 8 });
         else if (mode == "year") return (new[] { "2021", "2022", "2023", "2024", "2025" }, new double[] { 5000, 6000, 4500, 7000, 8000 }, new double[] { 4800, 5500, 4000, 6800, 7200 });
+        else if (mode == "custom") return (new[] { "Tuần 1", "Tuần 2", "Tuần 3", "Tuần 4" }, new double[] { 100, 120, 90, 110 }, new double[] { 80, 100, 150, 90 });
         else return (new[] { "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12" }, new double[] { 120, 150, 180, 200, 170, 160, 210, 240, 200, 180, 220, 300 }, new double[] { 100, 130, 160, 190, 150, 140, 190, 220, 180, 170, 200, 280 });
     }
 }
