@@ -1,10 +1,23 @@
 using QuanLyKho.Components;
+using Microsoft.EntityFrameworkCore;
+using QuanLyKho.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Cấu hình DbContext với MySQL
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("MySqlConnection"),
+        ServerVersion.AutoDetect(
+            builder.Configuration.GetConnectionString("MySqlConnection")
+        )
+    );
+});
 
 var app = builder.Build();
 
