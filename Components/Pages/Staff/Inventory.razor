@@ -1,6 +1,128 @@
 @page "/staff/inventory"
+@using QuanLyKho.Components.Layout
 @layout StaffLayout
 @rendermode InteractiveServer
+@inject NavigationManager Nav
 
-<h3>Kiểm kho</h3>
-<p>Giao diện kiểm kho sẽ được hiển thị ở đây.</p>
+<PageTitle>Nhân viên - Tra cứu tồn kho</PageTitle>
+
+<div class="container-fluid mt-3">
+    @* Header + Thanh tìm kiếm *@
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="text-secondary">Tra cứu tồn kho</h3>
+        <div class="d-flex gap-2">
+            <input class="form-control" @bind="tuKhoa" @bind:event="oninput" placeholder="Tìm theo mã hoặc tên..." />
+            <button class="btn btn-primary" @onclick="TimKiem"><i class="bi bi-search"></i> Tìm</button>
+        </div>
+    </div>
+
+    @* Bảng danh sách tồn kho *@
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 text-primary"><i class="bi bi-list-ul"></i> Danh sách sản phẩm trong kho</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Mã SP</th>
+                            <th>Tên Sản Phẩm</th>
+                            <th class="text-center">Số lượng</th>
+                            <th>Đơn vị</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var sp in danhSachHienThi)
+                        {
+                            <tr>
+                                <td class="ps-4 fw-bold">@sp.MaSP</td>
+                                <td>@sp.TenSP</td>
+                                <td class="text-center">
+                                    @* Tô màu đỏ nếu sắp hết hàng *@
+                                    <span class="@(sp.SoLuong < 10 ? "text-danger fw-bold" : "fw-bold")">
+                                        @sp.SoLuong
+                                    </span>
+                                </td>
+                                <td>@sp.DonVi</td>
+                                <td>
+                                    @if (sp.SoLuong > 0)
+                                    {
+                                        <span class="badge bg-success">Còn hàng</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Hết hàng</span>
+                                    }
+                                </td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => XemChiTiet(sp.MaSP)">
+                                        Chi tiết
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white">
+            <small class="text-muted">Hiển thị @danhSachHienThi.Count sản phẩm.</small>
+        </div>
+    </div>
+</div>
+
+@code {
+    // --- KHAI BÁO BIẾN ---
+    private string tuKhoa = "";
+
+    // Tạo class giả để hiển thị dữ liệu mẫu (Sau này bạn sẽ lấy từ Database)
+    public class SanPhamDemo
+    {
+        public string MaSP { get; set; } = "";
+        public string TenSP { get; set; } = "";
+        public int SoLuong { get; set; }
+        public string DonVi { get; set; } = "";
+    }
+
+    // Dữ liệu mẫu (Fake Data)
+    private List<SanPhamDemo> danhSachGoc = new List<SanPhamDemo>
+    {
+        new SanPhamDemo { MaSP = "SP001", TenSP = "Laptop Dell XPS 13", SoLuong = 5, DonVi = "Cái" },
+        new SanPhamDemo { MaSP = "SP002", TenSP = "Chuột Logitech G102", SoLuong = 150, DonVi = "Cái" },
+        new SanPhamDemo { MaSP = "SP003", TenSP = "Bàn phím cơ Keychron", SoLuong = 0, DonVi = "Cái" },
+        new SanPhamDemo { MaSP = "SP004", TenSP = "Màn hình LG 24 inch", SoLuong = 12, DonVi = "Cái" },
+        new SanPhamDemo { MaSP = "SP005", TenSP = "Tai nghe Sony WH-1000XM5", SoLuong = 8, DonVi = "Cái" },
+    };
+
+    private List<SanPhamDemo> danhSachHienThi = new List<SanPhamDemo>();
+
+    // --- HÀM KHỞI TẠO ---
+    protected override void OnInitialized()
+    {
+        // Ban đầu hiển thị hết
+        danhSachHienThi = danhSachGoc;
+    }
+
+    // --- XỬ LÝ TÌM KIẾM ---
+    private void TimKiem()
+    {
+        if (string.IsNullOrWhiteSpace(tuKhoa))
+        {
+            danhSachHienThi = danhSachGoc;
+        }
+        else
+        {
+            danhSachHienThi = danhSachGoc
+                .Where(x => x.TenSP.ToLower().Contains(tuKhoa.ToLower()) || x.MaSP.ToLower().Contains(tuKhoa.ToLower()))
+                .ToList();
+        }
+    }
+
+    private void XemChiTiet(string maSP)
+    {
+        // Logic xem chi tiết (có thể hiện popup hoặc chuyển trang)
+    }
+}
