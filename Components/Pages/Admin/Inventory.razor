@@ -1,165 +1,264 @@
 @page "/admin/inventory"
-@using QuanLyKho.Components.Layout
+@using System.Globalization
 @layout AdminLayout
 @rendermode InteractiveServer
 @inject NavigationManager Nav
 
-<PageTitle>Admin - Quản lý Tồn kho</PageTitle>
-
-<div class="container-fluid">
-    @* Tiêu đề và Nút hành động *@
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Quản lý Tồn kho</h1>
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+        <div>
+            <h2 class="fw-bold mb-0 text-gray-800">Quản lý Tồn kho</h2>
+            <p class="text-muted">Kiểm soát Nhập - Xuất - Tồn</p>
+        </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-primary shadow-sm" @onclick='() => Nav.NavigateTo("/admin/import")'>
-                <i class="bi bi-plus-lg"></i> Nhập kho
+            <button class="btn btn-success shadow-sm fw-bold" @onclick='() => Nav.NavigateTo("/admin/import")'>
+                <i class="bi bi-box-arrow-in-down"></i> Nhập kho
             </button>
-            <button class="btn btn-sm btn-danger shadow-sm" @onclick='() => Nav.NavigateTo("/admin/export")'>
-                <i class="bi bi-box-arrow-right"></i> Xuất kho
+            <button class="btn btn-danger shadow-sm fw-bold" @onclick='() => Nav.NavigateTo("/admin/export")'>
+                <i class="bi bi-box-arrow-up"></i> Xuất kho
             </button>
         </div>
     </div>
 
-    @* Card chứa bảng dữ liệu *@
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Danh sách tồn kho chi tiết</h6>
-            
-            @* Ô tìm kiếm *@
-            <div class="input-group input-group-sm" style="width: 250px;">
-                <input type="text" class="form-control bg-light border-0 small" placeholder="Tìm tên hoặc mã SP..."
-                       @bind="tuKhoa" @bind:event="oninput" @onkeyup="TimKiem" />
-                <div class="input-group-append">
-                    <button class="btn btn-primary" type="button" @onclick="TimKiem">
-                        <i class="bi bi-search"></i>
-                    </button>
-                </div>
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-2">
+            <div class="input-group border-0">
+                <span class="input-group-text bg-white border-0 text-muted"><i class="bi bi-search"></i></span>
+                <input class="form-control border-0 shadow-none"
+                       placeholder="Tìm kiếm sản phẩm..."
+                       @bind="SearchTerm"
+                       @bind:event="oninput" />
             </div>
         </div>
+    </div>
 
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
-                    <thead class="table-light text-dark">
-                        <tr>
-                            <th>Mã SP</th>
-                            <th>Tên Sản Phẩm</th>
-                            <th class="text-center">Tổng Nhập</th>
-                            <th class="text-center">Tổng Xuất</th>
-                            <th class="text-center fw-bold">Tồn Kho</th>
-                            <th class="text-center">Trạng thái</th>
-                            <th class="text-center">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in danhSachHienThi)
+    <div class="card border-0 shadow-sm overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr class="text-secondary small fw-bold text-uppercase">
+                        <th class="ps-4 py-3">Sản phẩm</th>
+                        <th>SKU</th>
+                        <th>Hãng</th>
+                        <th class="text-center text-success">Tổng Nhập</th>
+                        <th class="text-center text-danger">Tổng Xuất</th>
+                        <th class="text-center text-primary">Tồn kho</th>
+                        <th class="text-center pe-4" style="min-width: 100px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (FilteredProducts.Any())
+                    {
+                        @foreach (var prod in FilteredProducts)
                         {
-                            <tr>
-                                <td class="align-middle">@item.MaSP</td>
-                                <td class="align-middle fw-bold text-primary">@item.TenSP</td>
-                                <td class="align-middle text-center text-success">+@item.TongNhap</td>
-                                <td class="align-middle text-center text-secondary">-@item.TongXuat</td>
-                                <td class="align-middle text-center">
-                                    <span class="fs-5 fw-bold @(item.TonKho < 10 ? "text-danger" : "text-dark")">
-                                        @item.TonKho
+                            <tr @key="prod.Id">
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark fs-6">@prod.Name</div>
+                                    <small class="text-muted text-uppercase" style="font-size: 0.8rem;">@prod.Storage</small>
+                                </td>
+                                <td class="text-muted">@prod.SKU</td>
+                                <td>
+                                    <span class="badge rounded-pill px-3 py-2 @GetBrandBadgeClass(prod.Brand)">
+                                        @prod.Brand
                                     </span>
                                 </td>
-                                <td class="align-middle text-center">
-                                    @if (item.TonKho == 0)
-                                    {
-                                        <span class="badge bg-secondary">Hết hàng</span>
-                                    }
-                                    else if (item.TonKho < 10)
-                                    {
-                                        <span class="badge bg-warning text-dark">Sắp hết</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-success">Sẵn sàng</span>
-                                    }
+                                
+                                <td class="text-center text-success fw-bold fs-6">
+                                    @prod.TotalImport
                                 </td>
                                 
-                                @* --- PHẦN NÚT BẤM ĐÃ ĐƯỢC SỬA --- *@
-                                <td class="align-middle text-center">
-                                     <button class="btn btn-sm btn-info text-white me-1" title="Xem chi tiết">
-                                        <i class="bi bi-search"></i>
+                                <td class="text-center text-danger fw-bold fs-6">
+                                    @prod.TotalExport
+                                </td>
+                                
+                                <td class="text-center">
+                                    <span class="text-primary fw-bold fs-5">
+                                        @prod.Stock
+                                    </span>
+                                </td>
+                                
+                               <td class="text-end pe-4">
+                                <button type="button"
+                                    class="btn btn-sm"
+                                    title="Sửa"
+                                    @onclick="() => OpenEditModal(prod)">
+                                   ✏️
+                                </button>
+                               <button type="button"
+                                    class="btn btn-sm"
+                                    title="Xóa"
+                                    @onclick="() => ConfirmDelete(prod)">
+                                    🗑️
                                     </button>
-
-                                    <button class="btn btn-sm btn-warning me-1" title="Sửa/Cấu hình">
-                                        <i class="bi bi-wrench"></i>
-                                    </button>
-
-                                    <button class="btn btn-sm btn-danger" title="Xóa" @onclick="() => XoaSanPham(item)">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 opacity-50"></i>
+                                <div class="mt-2">Không tìm thấy sản phẩm nào</div>
                             </td>
-                            </tr>
-                        }
-                        @if (danhSachHienThi.Count == 0)
-                        {
-                            <tr>
-                                <td colspan="7" class="text-center py-4 text-muted">Không tìm thấy sản phẩm nào.</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
+@if (IsShowModal)
+{
+    <div class="modal fade show d-block" style="background:rgba(0,0,0,.5); z-index:1050">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="fw-bold mb-0">Chỉnh sửa thông tin</h5>
+                    <button class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tên sản phẩm</label>
+                        <input class="form-control" @bind="EditingProduct.Name" />
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Hãng</label>
+                            <select class="form-select" @bind="EditingProduct.Brand">
+                                <option>Apple</option>
+                                <option>Samsung</option>
+                                <option>Xiaomi</option>
+                                <option>Oppo</option>
+                                <option>Google</option>
+                            </select>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Dung lượng</label>
+                            <input class="form-control" @bind="EditingProduct.Storage" />
+                        </div>
+                    </div>
+                    <div class="row">
+                         <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Tổng Nhập</label>
+                            <input type="number" class="form-control" @bind="EditingProduct.TotalImport" />
+                        </div>
+                         <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Tổng Xuất</label>
+                            <input type="number" class="form-control" @bind="EditingProduct.TotalExport" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModal">Hủy</button>
+                    <button class="btn btn-warning" @onclick="SaveProduct">Lưu thay đổi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ShowDeleteConfirm)
+{
+    <div class="modal fade show d-block" style="background:rgba(0,0,0,.5); z-index:1060">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-body text-center p-4">
+                    <div class="text-danger mb-3">
+                        <i class="bi bi-exclamation-circle" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">Xác nhận xóa?</h5>
+                    <p class="text-muted mb-4">Hành động này không thể hoàn tác với <strong>@DeletingProduct?.Name</strong>.</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button class="btn btn-secondary px-4" @onclick="() => ShowDeleteConfirm = false">Hủy</button>
+                        <button class="btn btn-danger px-4" @onclick="DeleteProduct">Xóa ngay</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
-    // --- KHAI BÁO CLASS DỮ LIỆU ---
-    public class TonKhoItem
+    public class Product
     {
-        public string MaSP { get; set; } = "";
-        public string TenSP { get; set; } = "";
-        public int TongNhap { get; set; }
-        public int TongXuat { get; set; }
-        public int TonKho => TongNhap - TongXuat;
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string SKU { get; set; } = "";
+        public string Brand { get; set; } = "";
+        public string Storage { get; set; } = "";
+        public int TotalImport { get; set; }
+        public int TotalExport { get; set; }
+        public int Stock => TotalImport - TotalExport; 
     }
 
-    private string tuKhoa = "";
-    private List<TonKhoItem> danhSachGoc = new();
-    private List<TonKhoItem> danhSachHienThi = new();
+    private string SearchTerm = "";
+    private bool IsShowModal;
+    private bool ShowDeleteConfirm;
+    private Product EditingProduct = new();
+    private Product? DeletingProduct;
 
-    // --- KHỞI TẠO DỮ LIỆU ---
-    protected override void OnInitialized()
+    private List<Product> products = new List<Product>
     {
-        danhSachGoc = new List<TonKhoItem>
+        new Product { Id = 1, Name = "iPhone 17 Pro Max", SKU = "IP17-PM-256", Brand = "Apple", Storage = "256GB", TotalImport = 30, TotalExport = 15 },
+        new Product { Id = 2, Name = "Samsung Galaxy S26 Ultra", SKU = "SS-S26U-512", Brand = "Samsung", Storage = "512GB", TotalImport = 30, TotalExport = 22 },
+        new Product { Id = 3, Name = "Xiaomi 16 Pro", SKU = "XI-16P-256", Brand = "Xiaomi", Storage = "256GB", TotalImport = 30, TotalExport = 30 },
+        new Product { Id = 4, Name = "Oppo Find X9", SKU = "OP-X9-128", Brand = "Oppo", Storage = "128GB", TotalImport = 30, TotalExport = 6 },
+        new Product { Id = 5, Name = "Google Pixel 10", SKU = "GG-P10-256", Brand = "Google", Storage = "256GB", TotalImport = 30, TotalExport = 27 }
+    };
+
+    private List<Product> FilteredProducts => products
+        .Where(p => string.IsNullOrWhiteSpace(SearchTerm) || 
+                    p.Name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) || 
+                    p.Brand.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    private void OpenEditModal(Product p)
+    {
+        EditingProduct = new Product
         {
-            new TonKhoItem { MaSP = "VL001", TenSP = "Xi măng Hà Tiên", TongNhap = 1000, TongXuat = 500 },
-            new TonKhoItem { MaSP = "VL002", TenSP = "Gạch ống Tuynel", TongNhap = 5000, TongXuat = 4950 },
-            new TonKhoItem { MaSP = "VL003", TenSP = "Thép Pomina phi 16", TongNhap = 200, TongXuat = 50 },
-            new TonKhoItem { MaSP = "NO001", TenSP = "Sơn Dulux Trắng", TongNhap = 100, TongXuat = 100 },
-            new TonKhoItem { MaSP = "VL004", TenSP = "Cát xây dựng (Khối)", TongNhap = 50, TongXuat = 12 },
+            Id = p.Id, Name = p.Name, SKU = p.SKU, Brand = p.Brand, 
+            Storage = p.Storage, TotalImport = p.TotalImport, TotalExport = p.TotalExport
         };
-        danhSachHienThi = danhSachGoc.ToList(); // Copy ra danh sách hiển thị
+        IsShowModal = true;
     }
 
-    // --- XỬ LÝ TÌM KIẾM ---
-    private void TimKiem()
+    private void SaveProduct()
     {
-        if (string.IsNullOrWhiteSpace(tuKhoa))
+        var p = products.FirstOrDefault(x => x.Id == EditingProduct.Id);
+        if (p != null)
         {
-            danhSachHienThi = danhSachGoc.ToList();
+            p.Name = EditingProduct.Name;
+            p.Brand = EditingProduct.Brand;
+            p.Storage = EditingProduct.Storage;
+            p.TotalImport = EditingProduct.TotalImport;
+            p.TotalExport = EditingProduct.TotalExport;
         }
-        else
-        {
-            danhSachHienThi = danhSachGoc
-                .Where(x => x.TenSP.ToLower().Contains(tuKhoa.ToLower()) || 
-                            x.MaSP.ToLower().Contains(tuKhoa.ToLower()))
-                .ToList();
-        }
+        IsShowModal = false;
     }
 
-    // --- HÀM XÓA SẢN PHẨM (MỚI THÊM) ---
-    private void XoaSanPham(TonKhoItem itemCanXoa)
+    private void ConfirmDelete(Product p)
     {
-        // Xóa khỏi danh sách gốc
-        danhSachGoc.Remove(itemCanXoa);
-        
-        // Xóa khỏi danh sách đang hiển thị trên màn hình
-        danhSachHienThi.Remove(itemCanXoa);
+        DeletingProduct = p;
+        ShowDeleteConfirm = true;
     }
+
+    private void DeleteProduct()
+    {
+        if (DeletingProduct != null) products.Remove(DeletingProduct);
+        ShowDeleteConfirm = false;
+    }
+
+    private void CloseModal() => IsShowModal = false;
+
+    private string GetBrandBadgeClass(string brand) => brand switch
+    {
+        "Apple" => "bg-dark text-white",
+        "Samsung" => "bg-primary text-white",
+        "Xiaomi" => "bg-warning text-dark",
+        "Oppo" => "bg-success text-white",
+        "Google" => "bg-secondary text-white",
+        _ => "bg-light text-dark border"
+    };
 }
