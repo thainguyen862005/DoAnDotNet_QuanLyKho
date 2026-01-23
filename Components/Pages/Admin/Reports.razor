@@ -92,14 +92,14 @@
         <div class="col-lg-7">
             <div class="card shadow-sm border-0 h-100" style="border-radius: 16px;">
                 <div class="card-body">
-                    <h6 class="fw-bold text-dark mb-3">🏆 Top 5 Sản Phẩm Tiêu Biểu</h6>
+                    <h6 class="fw-bold text-dark mb-3">🏆 Top Sản Phẩm Tiêu Biểu (Tháng này)</h6>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
                             <thead class="bg-light text-secondary small">
                                 <tr>
                                     <th class="border-0 rounded-start">Sản phẩm</th>
-                                    <th class="border-0 text-center">Số lượng</th>
-                                    <th class="border-0 text-end rounded-end">Doanh thu</th>
+                                    <th class="border-0 text-center">Đã xuất</th>
+                                    <th class="border-0 text-end rounded-end">Doanh thu ước tính</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -107,7 +107,11 @@
                                 {
                                     <tr>
                                         <td class="fw-bold text-dark">@prod.Name</td>
-                                        <td class="text-center"><span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">@prod.Quantity</span></td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">
+                                                @prod.Quantity máy
+                                            </span>
+                                        </td>
                                         <td class="text-end fw-bold text-success">@prod.Revenue.ToString("N0") ₫</td>
                                     </tr>
                                 }
@@ -121,7 +125,7 @@
         <div class="col-lg-5">
             <div class="card shadow-sm border-0 h-100" style="border-radius: 16px;">
                 <div class="card-body">
-                    <h6 class="fw-bold text-dark mb-3">🍰 Tỷ Lệ Danh Mục</h6>
+                    <h6 class="fw-bold text-dark mb-3">🍰 Tỷ Lệ Theo Hãng</h6>
                     <div style="height: 250px; position: relative;">
                         <canvas id="categoryChart"></canvas>
                     </div>
@@ -135,7 +139,7 @@
             <div class="p-4 rounded-4 text-white shadow" style="background-color: #3b82f6;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="mb-1 opacity-75 fw-bold text-uppercase small">Tổng Nhập Kho</p>
+                        <p class="mb-1 opacity-75 fw-bold text-uppercase small">Tổng Nhập Kho (@GetCurrentModeName())</p>
                         <h2 class="fw-bold mb-0">@TotalImport.ToString("N0") <span class="fs-6">SP</span></h2>
                     </div>
                     <div class="fs-1 opacity-50">📥</div>
@@ -146,7 +150,7 @@
             <div class="p-4 rounded-4 text-white shadow" style="background-color: #ef4444;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="mb-1 opacity-75 fw-bold text-uppercase small">Tổng Xuất Kho</p>
+                        <p class="mb-1 opacity-75 fw-bold text-uppercase small">Tổng Xuất Kho (@GetCurrentModeName())</p>
                         <h2 class="fw-bold mb-0">@TotalExport.ToString("N0") <span class="fs-6">SP</span></h2>
                     </div>
                     <div class="fs-1 opacity-50">📤</div>
@@ -163,23 +167,25 @@
     private double TotalExport = 0;
     private DateTime fromDate = DateTime.Now.AddDays(-30);
     private DateTime toDate = DateTime.Now;
+
     public class ProductInfo
     {
         public string Name { get; set; } = "";
         public int Quantity { get; set; }
-        public double Revenue { get; set; }
+        public decimal Revenue { get; set; }
     }
 
     private List<ProductInfo> topProducts = new();
+
     protected override void OnInitialized()
     {
         topProducts = new List<ProductInfo>
         {
-            new ProductInfo { Name = "iPhone 15 Pro", Quantity = 120, Revenue = 3600000000 },
-            new ProductInfo { Name = "Samsung S24", Quantity = 95, Revenue = 2800000000 },
-            new ProductInfo { Name = "MacBook M2", Quantity = 80, Revenue = 2000000000 },
-            new ProductInfo { Name = "Sony XM5", Quantity = 150, Revenue = 1050000000 },
-            new ProductInfo { Name = "iPad Gen 10", Quantity = 200, Revenue = 1800000000 }
+            new ProductInfo { Name = "iPhone 17 Pro Max", Quantity = 45, Revenue = 1484550000 },
+            new ProductInfo { Name = "Samsung Galaxy S26 Ultra", Quantity = 38, Revenue = 1121000000 },
+            new ProductInfo { Name = "Oppo Find X9", Quantity = 32, Revenue = 496000000 },
+            new ProductInfo { Name = "Xiaomi 16 Pro", Quantity = 25, Revenue = 472500000 },
+            new ProductInfo { Name = "Google Pixel 10", Quantity = 12, Revenue = 252000000 }
         };
     }
 
@@ -213,8 +219,8 @@
     private string GetCurrentModeName() => viewMode switch
     {
         "day" => "7 ngày gần nhất",
-        "month" => "12 tháng",
-        "year" => "5 năm",
+        "month" => "12 tháng qua",
+        "year" => "5 năm qua",
         "custom" => $"{fromDate:dd/MM} - {toDate:dd/MM}",
         _ => ""
     };
@@ -222,14 +228,13 @@
     private async Task ExportToExcel()
     {
         var (labels, dataImport, dataExport) = GetDataByMode(viewMode);
-
         var csv = "ThoiGian,NhapKho,XuatKho\n";
         for (int i = 0; i < labels.Length; i++)
         {
             csv += $"{labels[i]},{dataImport[i]},{dataExport[i]}\n";
         }
 
-        await JS.InvokeVoidAsync("downloadFile", $"BaoCao_{DateTime.Now:yyyyMMdd_HHmmss}.csv", csv);
+        await JS.InvokeVoidAsync("downloadFile", $"BaoCao_Kho_{DateTime.Now:yyyyMMdd}.csv", csv);
     }
 
     private async Task RenderChart()
@@ -239,7 +244,6 @@
         TotalExport = dataExport.Sum();
 
         bool isLine = chartType == "line";
-
         var config = new
         {
             type = chartType,
@@ -296,12 +300,12 @@
             type = "doughnut",
             data = new
             {
-                labels = new[] { "Điện tử", "Gia dụng", "Thời trang", "Khác" },
+                labels = new[] { "Apple", "Samsung", "Xiaomi", "Oppo", "Google" },
                 datasets = new[]
                 {
                     new {
-                        data = new[] { 40, 25, 20, 15 },
-                        backgroundColor = new[] { "#3b82f6", "#10b981", "#f59e0b", "#9ca3af" },
+                        data = new[] { 35, 25, 20, 15, 5 },
+                        backgroundColor = new[] { "#212529", "#0d6efd", "#ffc107", "#198754", "#6c757d" },
                         borderWidth = 0,
                         hoverOffset = 4
                     }
@@ -315,15 +319,34 @@
                 cutout = "75%"
             }
         };
-
         await JS.InvokeVoidAsync("setupPieChart", "categoryChart", config);
     }
 
     private (string[], double[], double[]) GetDataByMode(string mode)
     {
-        if (mode == "day") return (new[] { "T2", "T3", "T4", "T5", "T6", "T7", "CN" }, new double[] { 50, 20, 15, 40, 60, 10, 5 }, new double[] { 30, 25, 10, 20, 45, 15, 8 });
-        else if (mode == "year") return (new[] { "2021", "2022", "2023", "2024", "2025" }, new double[] { 5000, 6000, 4500, 7000, 8000 }, new double[] { 4800, 5500, 4000, 6800, 7200 });
-        else if (mode == "custom") return (new[] { "Tuần 1", "Tuần 2", "Tuần 3", "Tuần 4" }, new double[] { 100, 120, 90, 110 }, new double[] { 80, 100, 150, 90 });
-        else return (new[] { "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12" }, new double[] { 120, 150, 180, 200, 170, 160, 210, 240, 200, 180, 220, 300 }, new double[] { 100, 130, 160, 190, 150, 140, 190, 220, 180, 170, 200, 280 });
+        if (mode == "day")
+            return (
+                new[] { "T2", "T3", "T4", "T5", "T6", "T7", "CN" },
+                new double[] { 15, 20, 10, 40, 25, 5, 2 },
+                new double[] { 12, 25, 15, 30, 35, 10, 5 }
+            );
+        else if (mode == "year")
+            return (
+                new[] { "2021", "2022", "2023", "2024", "2025" },
+                new double[] { 1200, 1500, 1100, 1800, 2000 },
+                new double[] { 1150, 1400, 1050, 1750, 1900 }
+            );
+        else if (mode == "custom")
+            return (
+                new[] { "Tuần 1", "Tuần 2", "Tuần 3", "Tuần 4" },
+                new double[] { 50, 60, 45, 70 },
+                new double[] { 40, 65, 55, 60 }
+            );
+        else
+            return (
+                new[] { "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12" },
+                new double[] { 80, 95, 120, 140, 100, 90, 110, 130, 150, 140, 160, 200 },
+                new double[] { 70, 90, 110, 130, 95, 85, 120, 125, 140, 145, 170, 210 }
+            );
     }
 }
