@@ -46,7 +46,6 @@
         <h4 class="fw-bold text-secondary mb-0">📈 Analytics Center</h4>
 
         <div class="d-flex flex-wrap gap-2 align-items-center">
-
             @if (viewMode == "custom")
             {
                 <div class="d-flex gap-2 bg-white p-1 rounded-pill shadow-sm border align-items-center px-3">
@@ -114,7 +113,7 @@
             </div>
 
             <div style="height: 450px;">
-                <canvas id="inventoryChart"></canvas>
+                <canvas @ref="inventoryChartRef"></canvas>
             </div>
         </div>
     </div>
@@ -158,7 +157,7 @@
                 <div class="card-body">
                     <h6 class="fw-bold text-dark mb-3">🍰 Tỷ Lệ Theo Hãng</h6>
                     <div style="height: 250px; position: relative;">
-                        <canvas id="categoryChart"></canvas>
+                        <canvas @ref="pieChartRef"></canvas>
                     </div>
                 </div>
             </div>
@@ -167,6 +166,9 @@
 </div>
 
 @code {
+    private ElementReference inventoryChartRef;
+    private ElementReference pieChartRef;
+
     private string viewMode = "month";
     private string chartType = "line";
     private double TotalImport = 0;
@@ -297,7 +299,7 @@
             }
         };
 
-        await JS.InvokeVoidAsync("setupChart", "inventoryChart", config);
+        await JS.InvokeVoidAsync("setupChart", inventoryChartRef, config);
     }
 
     private async Task RenderPieChart()
@@ -326,7 +328,8 @@
                 cutout = "75%"
             }
         };
-        await JS.InvokeVoidAsync("setupPieChart", "categoryChart", config);
+
+        await JS.InvokeVoidAsync("setupPieChart", pieChartRef, config);
     }
 
     private (string[], double[], double[]) GetDataByMode(string mode)

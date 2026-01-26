@@ -5,59 +5,48 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
-    <ResourcePreloader />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="QuanLyKho.styles.css" />
-    <ImportMap />
-    <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet />
 </head>
 
 <body>
     <Routes />
-    <ReconnectModal />
     <script src="_framework/blazor.web.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        window.setupChart = (canvasId, config) => {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            const type = config.type;
-            const colorImportBase = '#3b82f6';
-            const bgImport = ctx.createLinearGradient(0, 0, 0, 400);
-            bgImport.addColorStop(0, 'rgba(59, 130, 246, 0.6)');
-            bgImport.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
-
-            const colorExportBase = '#ef4444';
-            const bgExport = ctx.createLinearGradient(0, 0, 0, 400);
-            bgExport.addColorStop(0, 'rgba(239, 68, 68, 0.6)');
-            bgExport.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
-
-            if (config.data.datasets.length > 0) {
-                if (config.data.datasets[0]) {
-                    config.data.datasets[0].borderColor = colorImportBase;
-                    config.data.datasets[0].pointBackgroundColor = "#fff";
-                    config.data.datasets[0].pointBorderColor = colorImportBase;
-                    config.data.datasets[0].backgroundColor = type === 'line' ? bgImport : colorImportBase;
-                }
-                if (config.data.datasets[1]) {
-                    config.data.datasets[1].borderColor = colorExportBase;
-                    config.data.datasets[1].pointBackgroundColor = "#fff";
-                    config.data.datasets[1].pointBorderColor = colorExportBase;
-                    config.data.datasets[1].backgroundColor = type === 'line' ? bgExport : colorExportBase;
-                }
+        window.setupChart = (elementOrId, config) => {
+            let ctx = null;
+            if (typeof elementOrId === 'string') {
+                const el = document.getElementById(elementOrId);
+                if (el) ctx = el.getContext('2d');
+            } else if (elementOrId && elementOrId.getContext) {
+                ctx = elementOrId.getContext('2d');
             }
+
+            if (!ctx) return;
 
             if (window.myChartInstance) {
                 window.myChartInstance.destroy();
             }
-
             window.myChartInstance = new Chart(ctx, config);
         }
 
-        window.setupPieChart = (canvasId, config) => {
-            const ctx = document.getElementById(canvasId).getContext('2d');
+        window.setupPieChart = (elementOrId, config) => {
+            let ctx = null;
+
+            if (typeof elementOrId === 'string') {
+                const el = document.getElementById(elementOrId);
+                if (el) ctx = el.getContext('2d');
+            } else if (elementOrId && elementOrId.getContext) {
+                ctx = elementOrId.getContext('2d');
+            }
+
+            if (!ctx) return;
+
             if (window.pieChartInstance) window.pieChartInstance.destroy();
             window.pieChartInstance = new Chart(ctx, config);
         }
