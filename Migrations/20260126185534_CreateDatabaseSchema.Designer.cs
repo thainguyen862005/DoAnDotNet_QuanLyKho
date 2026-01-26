@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using QuanLyKho.Data;
 
@@ -11,9 +12,11 @@ using QuanLyKho.Data;
 namespace QuanLyKho.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260126185534_CreateDatabaseSchema")]
+    partial class CreateDatabaseSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -191,7 +194,7 @@ namespace QuanLyKho.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 27, 1, 55, 31, 937, DateTimeKind.Local).AddTicks(9976),
                             Email = "admin@gmail.com",
                             Password = "123",
                             Phone = "",
@@ -202,7 +205,7 @@ namespace QuanLyKho.Migrations
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 27, 1, 55, 31, 938, DateTimeKind.Local).AddTicks(669),
                             Email = "staff@gmail.com",
                             Password = "123",
                             Phone = "",

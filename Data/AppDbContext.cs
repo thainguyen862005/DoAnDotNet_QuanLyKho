@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -12,8 +12,8 @@ namespace QuanLyKho.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<Product> Products { get; set; }
-        public DbSet<InventoryLog> InventoryLogs { get; set; } 
-        public DbSet<Order> Orders { get; set; } 
+        public DbSet<InventoryLog> InventoryLogs { get; set; }
+        public DbSet<Order> Orders { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -26,7 +26,7 @@ namespace QuanLyKho.Data
                     Password = "123",
                     Role = 1,
                     Status = "Active",
-                    CreatedAt = DateTime.Now
+                    CreatedAt = new DateTime(2024, 1, 1) 
                 },
                 new User
                 {
@@ -36,7 +36,7 @@ namespace QuanLyKho.Data
                     Password = "123",
                     Role = 0,
                     Status = "Active",
-                    CreatedAt = DateTime.Now
+                    CreatedAt = new DateTime(2024, 1, 1)
                 }
             );
         }
@@ -93,7 +93,7 @@ namespace QuanLyKho.Data
 
         public decimal Price { get; set; } = 0;
 
-        public int Stock { get; set; } = 0; 
+        public int Stock { get; set; } = 0;
     }
 
     [Table("InventoryLogs")]
@@ -107,12 +107,13 @@ namespace QuanLyKho.Data
         [Required]
         [MaxLength(200)]
         public string ProductName { get; set; } = "";
+
         [MaxLength(50)]
         public string SKU { get; set; } = "";
 
         [Required]
         [MaxLength(20)]
-        public string Type { get; set; } = "Nh?p";
+        public string Type { get; set; } = "Nhập";
 
         public int Quantity { get; set; }
 
