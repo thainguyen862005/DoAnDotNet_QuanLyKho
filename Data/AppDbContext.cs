@@ -14,6 +14,7 @@ namespace QuanLyKho.Data
         public DbSet<TransactionDetail> TransactionDetails => Set<TransactionDetail>();
         public DbSet<Supplier> Suppliers => Set<Supplier>();
         public DbSet<User> Users => Set<User>();
+        public DbSet<Order> Orders => Set<Order>();
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
