@@ -1,0 +1,322 @@
+@page "/staff/sales"
+@layout StaffLayout
+@using QuanLyKho.Components.Layout
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<PageTitle>Nhân viên - Bán hàng</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+        <h3 class="text-gray-800 fw-bold">Bán Hàng (Staff)</h3>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 border-left-primary">
+                    <h6 class="m-0 font-weight-bold text-primary">Thông tin đơn hàng</h6>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger">@errorMessage</div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Chọn sản phẩm:</label>
+                        <select class="form-control" @onchange="OnProductChange">
+                            <option value="">-- Tìm kiếm hoặc chọn sản phẩm --</option>
+                            @foreach (var prod in mockProducts)
+                            {
+                                <option value="@prod.Id" disabled="@(prod.TonKho == 0)">
+                                    @prod.TenSanPham @(prod.TonKho == 0 ? "(Hết hàng)" : "")
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Hãng:</label>
+                            <input class="form-control" value="@selectedProduct?.Hang" readonly disabled />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Đơn giá:</label>
+                            <input class="form-control" value="@(selectedProduct?.Gia.ToString("N0") ?? "0") VNĐ" readonly disabled />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Tồn kho:</label>
+                            <input class="form-control text-danger fw-bold" value="@(selectedProduct != null ? selectedProduct.TonKho + " máy" : "")" readonly disabled />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Số lượng mua:</label>
+                            <input type="number" class="form-control" @bind="soLuong" min="1" max="@(selectedProduct?.TonKho ?? 1)" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Ngày bán:</label>
+                            <input type="date" class="form-control" @bind="ngayBan" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tên Khách hàng:</label>
+                        <input class="form-control" @bind="tenKhachHang" placeholder="Nhập tên khách..." />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nhân viên bán:</label>
+                        <input class="form-control" @bind="nhanVienBan" placeholder="Tên nhân viên..." />
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button class="btn btn-secondary" @onclick="LamMoi">Làm mới</button>
+                        <button class="btn btn-primary" @onclick="ThemVaoGio" disabled="@(selectedProduct == null || selectedProduct.TonKho == 0)">
+                            <i class="bi bi-cart-plus"></i> Thêm vào giỏ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold"><i class="bi bi-cart4"></i> Giỏ hàng hiện tại</h6>
+                    <span class="badge bg-danger text-white">@gioHang.Count món</span>
+                </div>
+                <div class="card-body">
+                    @if (gioHang.Count == 0)
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-basket3 display-4"></i>
+                            <p class="mt-2">Giỏ hàng đang trống</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive" style="max-height: 350px; overflow-y:auto;">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Sản phẩm</th>
+                                        <th class="text-center">SL</th>
+                                        <th class="text-end">Thành tiền</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in gioHang)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="fw-bold">@item.TenSanPham</div>
+                                                <small class="text-muted">@item.Hang</small>
+                                            </td>
+                                            <td class="text-center align-middle">@item.SoLuong</td>
+                                            <td class="text-end align-middle fw-bold">@item.ThanhTien.ToString("N0")</td>
+                                            <td class="text-center align-middle">
+                                                <button class="btn btn-sm btn-outline-danger border-0" @onclick="() => XoaKhoiGio(item)">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <hr />
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="m-0 text-secondary">Tổng cộng:</h5>
+                            <h3 class="m-0 text-danger fw-bold">@TongTien.ToString("N0") VNĐ</h3>
+                        </div>
+                        
+                        <button class="btn btn-success w-100 py-3 fw-bold fs-5 shadow-sm" @onclick="ThanhToan">
+                            <i class="bi bi-currency-dollar"></i> THANH TOÁN NGAY
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (showSuccessBox)
+    {
+        <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0">
+                    <div class="modal-body text-center py-5">
+                        <div class="mb-3 text-success">
+                            <i class="bi bi-check-circle-fill" style="font-size: 4rem;"></i>
+                        </div>
+                        <h3 class="fw-bold">Thanh toán thành công!</h3>
+                        <p class="text-muted mb-4">Đơn hàng đã được lưu vào hệ thống.</p>
+                        <button class="btn btn-primary px-5" @onclick="DongThongBao">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="card shadow mb-4 mt-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-gray-800">Lịch sử giao dịch (Session này)</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" width="100%">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Khách hàng</th>
+                            <th>Sản phẩm</th>
+                            <th>SL</th>
+                            <th>Tổng tiền</th>
+                            <th>NV Bán</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (lichSuGiaoDich.Count == 0)
+                        {
+                            <tr><td colspan="6" class="text-center text-muted">Chưa có giao dịch nào.</td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var ls in lichSuGiaoDich)
+                            {
+                                <tr>
+                                    <td>@ls.NgayBan.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@ls.TenKhachHang</td>
+                                    <td>@ls.TenSanPham <span class="text-muted small">(@ls.Hang)</span></td>
+                                    <td class="text-center">@ls.SoLuong</td>
+                                    <td class="text-end fw-bold text-success">@ls.ThanhTien.ToString("N0")</td>
+                                    <td>@ls.NhanVienBan</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    public class ProductInfo
+    {
+        public int Id { get; set; }
+        public string TenSanPham { get; set; } = "";
+        public string Hang { get; set; } = "";
+        public decimal Gia { get; set; }
+        public int TonKho { get; set; }
+    }
+
+    public class CartItem
+    {
+        public string TenSanPham { get; set; } = "";
+        public string Hang { get; set; } = "";
+        public int SoLuong { get; set; }
+        public decimal DonGia { get; set; }
+        public decimal ThanhTien => SoLuong * DonGia;
+        public DateTime NgayBan { get; set; }
+        public string TenKhachHang { get; set; } = "";
+        public string NhanVienBan { get; set; } = "";
+    }
+
+    private List<ProductInfo> mockProducts = new List<ProductInfo>
+    {
+        new ProductInfo { Id=1, TenSanPham="iPhone 17 Pro Max", Hang="Apple", Gia=32990000, TonKho=15 },
+        new ProductInfo { Id=2, TenSanPham="Samsung Galaxy S26 Ultra", Hang="Samsung", Gia=29500000, TonKho=8 },
+        new ProductInfo { Id=3, TenSanPham="Xiaomi 16 Pro", Hang="Xiaomi", Gia=18900000, TonKho=0 },
+        new ProductInfo { Id=4, TenSanPham="Oppo Find X9", Hang="Oppo", Gia=15500000, TonKho=24 },
+        new ProductInfo { Id=5, TenSanPham="Google Pixel 10", Hang="Google", Gia=21000000, TonKho=3 },
+    };
+
+    private ProductInfo? selectedProduct;
+    private int soLuong = 1;
+    private DateTime ngayBan = DateTime.Now;
+    private string tenKhachHang = "";
+    private string nhanVienBan = "";
+    private string? errorMessage;
+    private bool showSuccessBox = false;
+
+    private List<CartItem> gioHang = new List<CartItem>();
+    private List<CartItem> lichSuGiaoDich = new List<CartItem>();
+
+    private decimal TongTien => gioHang.Sum(x => x.ThanhTien);
+
+    private void OnProductChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id))
+        {
+            selectedProduct = mockProducts.FirstOrDefault(p => p.Id == id);
+            soLuong = (selectedProduct != null && selectedProduct.TonKho > 0) ? 1 : 0;
+        }
+        else
+        {
+            selectedProduct = null;
+        }
+    }
+
+    private void ThemVaoGio()
+    {
+        errorMessage = null;
+
+        if (selectedProduct == null) { errorMessage = "Vui lòng chọn sản phẩm."; return; }
+        if (soLuong <= 0) { errorMessage = "Số lượng phải lớn hơn 0."; return; }
+        if (soLuong > selectedProduct.TonKho) { errorMessage = "Số lượng mua vượt quá tồn kho."; return; }
+        if (string.IsNullOrWhiteSpace(tenKhachHang) || string.IsNullOrWhiteSpace(nhanVienBan))
+        {
+            errorMessage = "Vui lòng nhập tên Khách hàng và Nhân viên.";
+            return;
+        }
+
+        gioHang.Add(new CartItem
+        {
+            TenSanPham = selectedProduct.TenSanPham,
+            Hang = selectedProduct.Hang,
+            SoLuong = soLuong,
+            DonGia = selectedProduct.Gia,
+            NgayBan = ngayBan,
+            TenKhachHang = tenKhachHang,
+            NhanVienBan = nhanVienBan
+        });
+
+        selectedProduct.TonKho -= soLuong;
+
+        selectedProduct = null;
+        soLuong = 1;
+    }
+
+    private void XoaKhoiGio(CartItem item)
+    {
+        gioHang.Remove(item);
+        var prod = mockProducts.FirstOrDefault(p => p.TenSanPham == item.TenSanPham);
+        if(prod != null) prod.TonKho += item.SoLuong;
+    }
+
+    private void ThanhToan()
+    {
+        if (gioHang.Count == 0) return;
+        
+        lichSuGiaoDich.AddRange(gioHang);
+        
+        gioHang.Clear();
+        showSuccessBox = true;
+    }
+
+    private void LamMoi()
+    {
+        selectedProduct = null;
+        soLuong = 1;
+        tenKhachHang = "";
+        nhanVienBan = "";
+        errorMessage = null;
+    }
+
+    private void DongThongBao() => showSuccessBox = false;
+}
