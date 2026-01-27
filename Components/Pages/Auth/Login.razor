@@ -1,64 +1,183 @@
 @page "/login"
-@layout MainLayout
 @rendermode InteractiveServer
+@using System.Security.Cryptography
+@using System.Text
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using QuanLyKho.Data
+@using QuanLyKho.Models
+@using QuanLyKho.Auth
+
+@inject AppDbContext DbContext
 @inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
 
-<div class="login-container">
-    <div class="login-card">
-        <h1 class="welcome-text">Welcome</h1>
-        
-        <div class="logo-box">T<span>-Warehouse</span></div>
+<style>
+    .login-bg {
+        /* Gradient xanh dương nhẹ */
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        min-height: 100vh;
+    }
 
-        <form @onsubmit="HandleLogin" @onsubmit:preventDefault="true">
-            <div class="input-group">
-                <label>Email</label>
-                <input type="email" @bind="email" placeholder="nguyenvana@example.com" required>
-                <div class="underline"></div>
+    .card-login {
+        border: none;
+        border-radius: 1rem;
+        /* Bo góc mềm mại */
+    }
+
+    .btn-login {
+        background-color: #1976d2;
+        /* Xanh đậm hơn chút để nổi bật */
+        border: none;
+        padding: 12px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .btn-login:hover {
+        background-color: #1565c0;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(25, 118, 210, 0.2);
+    }
+
+    .form-control:focus {
+        border-color: #90caf9;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+
+    .icon-bg {
+        background-color: #e3f2fd;
+        color: #1976d2;
+    }
+</style>
+
+<div class="container-fluid login-bg d-flex align-items-center justify-content-center">
+    <div class="card card-login shadow-lg p-4" style="max-width: 420px; width: 100%;">
+        <div class="card-body">
+
+            <div class="text-center mb-4">
+                <img src="https://cdn-icons-png.flaticon.com/512/9131/9131529.png" alt="Avatar"
+                    class="rounded-circle border" width="40" height="40" />
+                <h3 class="fw-bold text-primary">Đăng Nhập</h3>
+                <p class="text-muted small">Chào mừng bạn quay trở lại hệ thống</p>
             </div>
 
-            <div class="input-group">
-                <label>Password</label>
-                 
-                    <input type="password" @bind="password" placeholder="Password" required>
-                    
-                    <div class="underline"></div> 
-                
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control" id="floatingInputUser" placeholder="Nhập tên đăng nhập"
+                    @bind="username" />
+                <label for="floatingInputUser" class="text-secondary">
+                    <i class="bi bi-person me-2"></i>Tên đăng nhập
+                </label>
             </div>
 
-           <button type="submit" class="login-button" @onclick="HandleLogin">Login</button>
-        </form>
+            <div class="form-floating mb-4">
+                <input type="password" class="form-control" id="floatingInputPass" placeholder="Nhập mật khẩu"
+                    @bind="password" />
+                <label for="floatingInputPass" class="text-secondary">
+                    <i class="bi bi-lock me-2"></i>Mật khẩu
+                </label>
+            </div>
+            <button class="btn btn-primary w-100 btn-login text-white mb-3 rounded-pill" @onclick="HandleLogin">
+                Đăng Nhập
+            </button>
 
-        <p class="footer-text">
-            Don't have an account? <a href="#">Sign Up</a>
-        </p>
+            <div class="text-center">
+                <span class="text-muted">Chưa có tài khoản?</span>
+                <a href="/register" class="text-primary text-decoration-none fw-bold ms-1">Đăng ký ngay</a>
+            </div>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger mt-4 d-flex align-items-center shadow-sm border-0" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                    <div>@errorMessage</div>
+                </div>
+            }
+        </div>
     </div>
 </div>
 
-
 @code {
-    string email = "";  
-    string password = "";
-    string error = "";
-    bool showPassword = false;
+    // --- GIỮ NGUYÊN 100% LOGIC CŨ CỦA BẠN ---
 
-    void TogglePassword() => showPassword = !showPassword;
+    private string username = "";
+    private string password = "";
+    private string errorMessage = "";
 
-    void HandleLogin()
+    private async Task HandleLogin()
     {
-        // Kiểm tra logic theo email
-        if (email == "admin@gmail.com" && password == "123")
+        errorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
         {
-            Nav.NavigateTo("/Admin/Dashboard");
+            errorMessage = "Vui lòng nhập đầy đủ Tài khoản và Mật khẩu!";
+            return;
         }
-        else if (email == "staff@gmail.com" && password == "123")
+
+        try
         {
-            Nav.NavigateTo("/Staff/Import");
+            // 1. Mã hóa pass người dùng nhập để so sánh
+            string passwordHash = GetMD5Hash(password);
+
+            // 2. Kiểm tra trong Database
+            var user = await DbContext.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Username == username && u.Password_hash == passwordHash);
+
+            // Nếu không tìm thấy hoặc sai pass
+            if (user == null)
+            {
+                errorMessage = "Sai tài khoản hoặc mật khẩu!";
+                return;
+            }
+
+            if (user.Status != "Active")
+            {
+                errorMessage = "Tài khoản đang bị khóa!";
+                return;
+            }
+
+            // 3. Cập nhật trạng thái đăng nhập (Ghi nhớ User)
+            var customAuthStateProvider = (CustomAuthenticationStateProvider)AuthStateProvider;
+            await customAuthStateProvider.UpdateAuthenticationState(new UserSession
+            {
+                UserName = user.Username,
+                Role = user.Role
+            });
+
+            // 4. KIỂM TRA ROLE ĐỂ ĐIỀU HƯỚNG
+            // Chuyển role về chữ thường và cắt khoảng trắng để so sánh chính xác
+            string role = user.Role?.Trim().ToLower() ?? "";
+
+            // Logic: Admin(1) -> Dashboard, Staff(0) -> Sale
+            // Code này hỗ trợ cả nếu bạn lưu trong DB là chữ "admin" hoặc số "1"
+            if (role == "admin" || role == "1")
+            {
+                Nav.NavigateTo("/admin/dashboard", forceLoad: false);
+            }
+            else if (role == "staff" || role == "0")
+            {
+                Nav.NavigateTo("/staff/sales", forceLoad: false);
+            }
+            else
+            {
+                // Role lạ hoặc chưa phân quyền -> Về trang chủ
+                Nav.NavigateTo("/", forceLoad: false);
+            }
         }
-        else
+        catch (Exception ex)
         {
-            error = "Email hoặc mật khẩu không chính xác";
+            errorMessage = "Lỗi kết nối: " + ex.Message;
         }
     }
 
+    private string GetMD5Hash(string input)
+    {
+        using (MD5 md5 = MD5.Create())
+        {
+            byte[] inputBytes = Encoding.ASCII.GetBytes(input);
+            byte[] hashBytes = md5.ComputeHash(inputBytes);
+            return Convert.ToHexString(hashBytes);
+        }
+    }
 }
-

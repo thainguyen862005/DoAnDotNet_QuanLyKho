@@ -1,0 +1,238 @@
+@page "/register"
+@rendermode InteractiveServer
+@using System.Security.Cryptography
+@using System.Text
+@using Microsoft.EntityFrameworkCore
+@using QuanLyKho.Data
+@using QuanLyKho.Models
+
+@inject AppDbContext DbContext
+@inject NavigationManager Nav
+
+<style>
+    .register-bg {
+        /* Gradient xanh dương nhẹ */
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        min-height: 100vh;
+    }
+    .card-register {
+        border: none;
+        border-radius: 1rem;
+        background-color: #ffffff;
+    }
+    .btn-register {
+        background-color: #2e7d32; /* Màu xanh lá cho nút Đăng ký để phân biệt với Login */
+        border: none;
+        padding: 12px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .btn-register:hover {
+        background-color: #1b5e20;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(46, 125, 50, 0.2);
+    }
+    .form-control:focus {
+        border-color: #a5d6a7; /* Viền xanh lá nhạt khi focus */
+        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.15);
+    }
+    .icon-bg {
+        background-color: #e8f5e9; /* Nền icon xanh lá nhạt */
+        color: #2e7d32;
+    }
+    /* Chỉnh màu chữ placeholder/label */
+    .form-floating > label {
+        color: #6c757d;
+    }
+    .form-floating > .form-control:focus ~ label {
+        color: #2e7d32;
+    }
+</style>
+
+<div class="container-fluid register-bg d-flex align-items-center justify-content-center py-5">
+    <div class="card card-register shadow-lg p-4" style="max-width: 500px; width: 100%;">
+        <div class="card-body">
+            
+            <div class="text-center mb-4">
+                <img src="https://cdn-icons-png.flaticon.com/512/9131/9131529.png" alt="Avatar"
+                    class="rounded-circle border" width="40" height="40" />
+                <h3 class="fw-bold text-success">Đăng Ký Tài Khoản</h3>
+                <p class="text-muted small">Tạo tài khoản mới để truy cập hệ thống</p>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input type="text" 
+                       class="form-control @(string.IsNullOrEmpty(errUsername) ? "" : "is-invalid")" 
+                       id="floatingUser" 
+                       placeholder="Nhập tên đăng nhập" 
+                       @bind="newUser.Username" />
+                <label for="floatingUser">
+                    <i class="bi bi-person me-2"></i>Tên đăng nhập (*)
+                </label>
+                @if (!string.IsNullOrEmpty(errUsername))
+                {
+                    <div class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>@errUsername</div>
+                }
+            </div>
+
+            <div class="form-floating mb-3">
+                <input type="email" 
+                       class="form-control" 
+                       id="floatingEmail" 
+                       placeholder="Nhập địa chỉ email" 
+                       @bind="newUser.Email" />
+                <label for="floatingEmail">
+                    <i class="bi bi-envelope me-2"></i>Email
+                </label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input type="password" 
+                       class="form-control @(string.IsNullOrEmpty(errPassword) ? "" : "is-invalid")" 
+                       id="floatingPass" 
+                       placeholder="Nhập mật khẩu" 
+                       @bind="rawPassword" />
+                <label for="floatingPass">
+                    <i class="bi bi-lock me-2"></i>Mật khẩu (*)
+                </label>
+                @if (!string.IsNullOrEmpty(errPassword))
+                {
+                    <div class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>@errPassword</div>
+                }
+            </div>
+
+            <div class="form-floating mb-4">
+                <input type="password" 
+                       class="form-control @(string.IsNullOrEmpty(errConfirm) ? "" : "is-invalid")" 
+                       id="floatingConfirm" 
+                       placeholder="Nhập lại mật khẩu" 
+                       @bind="confirmPassword" />
+                <label for="floatingConfirm">
+                    <i class="bi bi-check2-circle me-2"></i>Xác nhận mật khẩu (*)
+                </label>
+                @if (!string.IsNullOrEmpty(errConfirm))
+                {
+                    <div class="text-danger small mt-1 ms-1"><i class="bi bi-exclamation-circle me-1"></i>@errConfirm</div>
+                }
+            </div>
+
+            <button class="btn btn-success w-100 btn-register text-white mb-3 rounded-pill" 
+                    @onclick="HandleRegister" disabled="@isProcessing">
+                @if (isProcessing) 
+                { 
+                    <span class="spinner-border spinner-border-sm me-2"></span><span>Đang xử lý...</span> 
+                } 
+                else 
+                { 
+                    <span>Đăng Ký</span> 
+                }
+            </button>
+            
+            @if (!string.IsNullOrEmpty(generalMessage))
+            {
+                <div class="alert alert-danger mt-3 text-center border-0 bg-danger bg-opacity-10 text-danger">
+                    <small>@generalMessage</small>
+                </div>
+            }
+
+            <div class="text-center mt-3">
+                <span class="text-muted">Đã có tài khoản?</span>
+                <a href="/login" class="text-success text-decoration-none fw-bold ms-1">Đăng nhập ngay</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // --- LOGIC GIỮ NGUYÊN 100% ---
+    private User newUser = new User();
+    private string rawPassword = "";
+    private string confirmPassword = "";
+    
+    // Các biến chứa lỗi riêng biệt cho từng ô
+    private string errUsername = "";
+    private string errPassword = "";
+    private string errConfirm = "";
+    private string generalMessage = "";
+    
+    private bool isProcessing = false;
+
+    private async Task HandleRegister()
+    {
+        // 1. Reset lỗi cũ
+        errUsername = "";
+        errPassword = "";
+        errConfirm = "";
+        generalMessage = "";
+        bool isValid = true;
+
+        // 2. Validate từng ô (Logic bắt lỗi)
+        if (string.IsNullOrWhiteSpace(newUser.Username))
+        {
+            errUsername = "Bạn chưa nhập tên đăng nhập!";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(rawPassword))
+        {
+            errPassword = "Bạn chưa nhập mật khẩu!";
+            isValid = false;
+        }
+        else if (rawPassword.Length < 6)
+        {
+            errPassword = "Mật khẩu phải dài hơn 6 ký tự!";
+            isValid = false;
+        }
+
+        if (rawPassword != confirmPassword)
+        {
+            errConfirm = "Mật khẩu xác nhận không khớp!";
+            isValid = false;
+        }
+
+        // Nếu có lỗi thì dừng lại, không lưu DB
+        if (!isValid) return;
+
+        isProcessing = true;
+
+        try
+        {
+            // 3. Kiểm tra DB xem Username đã tồn tại chưa
+            var exist = await DbContext.Users.AnyAsync(u => u.Username == newUser.Username);
+            if (exist)
+            {
+                errUsername = "Tên tài khoản này đã có người dùng!";
+                isProcessing = false;
+                return;
+            }
+
+            // 4. Lưu vào Database
+            newUser.Password_hash = GetMD5Hash(rawPassword); // Mã hóa password
+            newUser.Role = "staff";      
+            newUser.Status = "Active";   
+            newUser.CreateAt = DateTime.Now;
+
+            DbContext.Users.Add(newUser);
+            await DbContext.SaveChangesAsync();
+
+            // 5. Điều hướng về trang Login
+            await Task.Delay(1000); // Đợi 1 xíu cho user thấy
+            Nav.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            generalMessage = "Lỗi hệ thống: " + ex.Message;
+            isProcessing = false;
+        }
+    }
+
+    private string GetMD5Hash(string input)
+    {
+        using (MD5 md5 = MD5.Create())
+        {
+            byte[] inputBytes = Encoding.ASCII.GetBytes(input);
+            byte[] hashBytes = md5.ComputeHash(inputBytes);
+            return Convert.ToHexString(hashBytes);
+        }
+    }
+}
