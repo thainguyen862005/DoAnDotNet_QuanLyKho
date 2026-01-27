@@ -1,4 +1,4 @@
-@page "/admin/sales-admin"
+@page "/staff/sales"
 @layout QuanLyKho.Components.Layout.AdminLayout
 @using QuanLyKho.Data
 @using QuanLyKho.Models
@@ -6,11 +6,11 @@
 @inject AppDbContext Db
 @rendermode InteractiveServer
 
-<PageTitle>Bán hàng (Admin)</PageTitle>
+<PageTitle>Bán hàng (Staff)</PageTitle>
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
-        <h3 class="fw-bold text-dark m-0">Bán Hàng (Admin POS)</h3>
+        <h3 class="fw-bold text-dark m-0">Bán Hàng (Staff)</h3>
         <span class="badge bg-primary fs-6">@DateTime.Now.ToString("dd/MM/yyyy")</span>
     </div>
 
