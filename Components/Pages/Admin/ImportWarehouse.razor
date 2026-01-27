@@ -29,10 +29,28 @@
 
                 <div class="card-body">
 
-                    <!-- CHỌN HÃNG -->
+                    <!-- NHÀ CUNG CẤP -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Chọn hãng</label>
-                        <select class="form-control" @onchange="OnBrandChanged">
+                        <label class="form-label fw-bold">Nhà cung cấp <span class="text-danger">*</span></label>
+                        <div class="d-flex gap-2">
+                            <select class="form-select scroll-select" @bind="selectedSupplierId">
+                                <option value="0">-- Chọn nhà cung cấp --</option>
+                                @foreach (var s in suppliers)
+                                {
+                                    <option value="@s.Supplier_Id">@s.SupplierName</option>
+                                }
+                            </select>
+
+                            <button type="button" class="btn btn-outline-primary" @onclick="ShowAddSupplier">
+                                +NCC
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- LỌC HÃNG -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Lọc theo hãng</label>
+                        <select class="form-select scroll-select" @onchange="OnBrandChanged">
                             <option value="">-- Tất cả hãng --</option>
                             @foreach (var b in brands)
                             {
@@ -41,45 +59,47 @@
                         </select>
                     </div>
 
-                    <!-- CHỌN SẢN PHẨM -->
-                    <div class="mb-3">
+                    <!-- CHỌN SẢN PHẨM CÓ TÌM KIẾM -->
+                    <div class="mb-3 position-relative"
+                         tabindex="0"
+                         @onfocusout="HandleFocusOut">
+
                         <label class="form-label fw-bold">Chọn sản phẩm (SKU)</label>
-                        <select class="form-control" @onchange="OnProductChanged">
-                            <option value="">-- Chọn sản phẩm --</option>
-                            @foreach (var item in filteredItems)
-                            {
-                                <option value="@item.Sp_item_id">
-                                    @item.Product!.Sp_name - @item.SKU (Tồn: @item.StockQuantity)
-                                </option>
-                            }
-                        </select>
+
+                        <input class="form-control"
+                               placeholder="Tìm theo tên hoặc SKU..."
+                               @bind="searchKeyword"
+                               @bind:event="oninput"
+                               @onfocus="() => showDropdown = true" />
+
+                        @if (showDropdown)
+                        {
+                            <div class="dropdown-search shadow">
+                                @if (filteredItems.Any())
+                                {
+                                    @foreach (var item in filteredItems)
+                                    {
+                                        <div class="dropdown-item-custom"
+                                             @onclick="() => SelectProduct(item)">
+                                            <b>@item.Product!.Sp_name</b><br />
+                                            <small>SKU: @item.SKU | Tồn: @item.StockQuantity</small>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="p-2 text-muted">Không tìm thấy sản phẩm</div>
+                                }
+                            </div>
+                        }
                     </div>
 
-                    @if (selectedItem != null)
-                    {
-                        <div class="border rounded p-3 mb-3 bg-light">
-                            <div class="row">
-                                <div class="col-md-4 text-center">
-                                    <img src="/images/no-image.png" class="img-fluid rounded" />
-                                </div>
-                                <div class="col-md-8">
-                                    <p><b>Tên:</b> @selectedItem.Product!.Sp_name</p>
-                                    <p><b>SKU:</b> @selectedItem.SKU</p>
-                                    <p><b>Hãng:</b> @selectedItem.Product.Brand!.Brand_name</p>
-                                    <p><b>Tồn kho hiện tại:</b> @selectedItem.StockQuantity</p>
-                                </div>
-                            </div>
-                        </div>
-                    }
 
+
+                    <!-- SỐ LƯỢNG -->
                     <div class="mb-3">
                         <label class="form-label fw-bold">Số lượng nhập</label>
                         <input type="number" class="form-control" @bind="quantity" min="1" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Ghi chú</label>
-                        <textarea class="form-control" rows="3" @bind="note"></textarea>
                     </div>
 
                     <button class="btn btn-success" @onclick="NhapKho">Xác nhận nhập kho</button>
@@ -94,19 +114,26 @@
                     <h6 class="m-0">Phiếu nhập</h6>
                 </div>
                 <div class="card-body">
+                    @if (selectedSupplierId > 0)
+                    {
+                        <p><b>NCC:</b> @suppliers.FirstOrDefault(s => s.Supplier_Id == selectedSupplierId)?.SupplierName</p>
+                        <hr />
+                    }
+
                     @if (selectedItem != null)
                     {
                         <p><b>Sản phẩm:</b> @selectedItem.Product!.Sp_name</p>
-                        <p><b>Hãng:</b> @selectedItem.Product.Brand!.Brand_name</p>
-                        <p><b>Số lượng nhập:</b> @quantity</p>
-                        <p><b>Tồn kho sau nhập:</b> @(selectedItem.StockQuantity + quantity)</p>
+                        <p><b>Số lượng:</b> @quantity</p>
+                        <p><b>Thành tiền:</b> @((selectedItem.Price * quantity).ToString("N0")) đ</p>
                     }
 
                     @if (!string.IsNullOrEmpty(receiptCode))
                     {
                         <hr />
-                        <p><b>Mã phiếu:</b> @receiptCode</p>
-                        <p><b>Ngày nhập:</b> @createdDate?.ToString("dd/MM/yyyy HH:mm")</p>
+                        <div class="alert alert-success m-0 p-2">
+                            <p class="mb-1"><b>Mã phiếu:</b> @receiptCode</p>
+                            <p class="mb-0"><b>Ngày nhập:</b> @createdDate?.ToString("dd/MM/yyyy HH:mm")</p>
+                        </div>
                     }
                 </div>
             </div>
@@ -114,27 +141,97 @@
     </div>
 </div>
 
+<!-- POPUP THÊM NHÀ CUNG CẤP -->
+@if (showAddSupplierModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Thêm nhà cung cấp</h5>
+                    <button class="btn-close btn-close-white" @onclick="CloseAddSupplier"></button>
+                </div>
+                <div class="modal-body">
+                    <input class="form-control mb-2" placeholder="Tên NCC" @bind="newSupplier.SupplierName" />
+                    <input class="form-control mb-2" placeholder="Người liên hệ" @bind="newSupplier.ContactName" />
+                    <input class="form-control mb-2" placeholder="SĐT" @bind="newSupplier.Phone" />
+                    <input class="form-control" placeholder="Địa chỉ" @bind="newSupplier.Address" />
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseAddSupplier">Huỷ</button>
+                    <button class="btn btn-success" @onclick="SaveSupplier">Lưu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid" @onclick="() => showDropdown = false"></div>
+}
+
+<style>
+    select.scroll-select {
+        max-height: 38px;
+        overflow-y: auto;
+    }
+
+    .dropdown-search {
+        position: absolute;
+        width: 100%;
+        max-height: 250px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        z-index: 1000;
+    }
+
+    .dropdown-item-custom {
+        padding: 8px 10px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+    }
+
+        .dropdown-item-custom:hover {
+            background-color: #f1f1f1;
+        }
+
+</style>
+
 @code {
     private List<ProductItem> allItems = new();
-    private List<ProductItem> filteredItems = new();
-    private List<string> brands = new();
+    private List<ProductItem> filteredItems => allItems
+    .Where(i =>
+        (string.IsNullOrEmpty(selectedBrand) || i.Product!.Brand!.Brand_name == selectedBrand) &&
+        (string.IsNullOrEmpty(searchKeyword) ||
+         i.Product!.Sp_name.Contains(searchKeyword, StringComparison.OrdinalIgnoreCase) ||
+         i.SKU.Contains(searchKeyword, StringComparison.OrdinalIgnoreCase)))
+    .ToList();
 
+    private List<string> brands = new();
+    private List<Supplier> suppliers = new();
+
+    private int selectedSupplierId = 0;
     private string? selectedBrand;
     private ProductItem? selectedItem;
     private int quantity = 1;
-    private string? note;
 
     private string? successMessage;
     private string? errorMessage;
-
     private string? receiptCode;
     private DateTime? createdDate;
+
+    private bool showAddSupplierModal = false;
+    private Supplier newSupplier = new();
+
+    private string searchKeyword = "";
+    private bool showDropdown = false;
+
 
     protected override void OnInitialized()
     {
         allItems = _context.ProductItems
             .Include(i => i.Product)!
-                .ThenInclude(p => p.Brand)
+            .ThenInclude(p => p.Brand)
             .ToList();
 
         brands = allItems
@@ -143,64 +240,43 @@
             .Distinct()
             .OrderBy(b => b)
             .ToList();
-
-        filteredItems = allItems;
+        suppliers = _context.Suppliers.ToList();
     }
 
-    private void OnBrandChanged(ChangeEventArgs e)
+    void OnBrandChanged(ChangeEventArgs e)
     {
         selectedBrand = e.Value?.ToString();
         selectedItem = null;
 
-        if (string.IsNullOrWhiteSpace(selectedBrand))
-            filteredItems = allItems;
-        else
-            filteredItems = allItems
-                .Where(i => i.Product!.Brand!.Brand_name == selectedBrand)
-                .ToList();
     }
 
-    private void OnProductChanged(ChangeEventArgs e)
+    void OnProductChanged(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value?.ToString(), out int id))
-        {
             selectedItem = allItems.FirstOrDefault(i => i.Sp_item_id == id);
-        }
     }
 
-    private async Task NhapKho()
+    async Task NhapKho()
     {
         errorMessage = successMessage = null;
 
-        if (selectedItem == null)
-        {
-            errorMessage = "Vui lòng chọn sản phẩm.";
-            return;
-        }
+        if (selectedSupplierId == 0) { errorMessage = "Vui lòng chọn Nhà cung cấp."; return; }
+        if (selectedItem == null) { errorMessage = "Vui lòng chọn sản phẩm."; return; }
+        if (quantity <= 0) { errorMessage = "Số lượng phải lớn hơn 0."; return; }
 
-        if (quantity <= 0)
-        {
-            errorMessage = "Số lượng phải lớn hơn 0.";
-            return;
-        }
-
-        // 1️⃣ Cập nhật tồn kho
         selectedItem.StockQuantity += quantity;
 
-        // 2️⃣ Tạo phiếu nhập
         var transaction = new InventoryTransaction
         {
             UserID = 1,
-            SupplierID = 1,
+            SupplierID = selectedSupplierId,
             Type = "Nhập",
-            TransactionDate = DateTime.Now,
-            Note = note
+            TransactionDate = DateTime.Now
         };
 
         _context.InventoryTransactions.Add(transaction);
         await _context.SaveChangesAsync();
 
-        // 3️⃣ Chi tiết phiếu
         var detail = new TransactionDetail
         {
             TransactionID = transaction.TransactionID,
@@ -212,10 +288,42 @@
         _context.TransactionDetails.Add(detail);
         await _context.SaveChangesAsync();
 
-        // 4️⃣ Mã phiếu
         createdDate = transaction.TransactionDate;
         receiptCode = $"PN-{transaction.TransactionID:0000}";
-
         successMessage = "Nhập kho thành công!";
     }
+
+    void ShowAddSupplier()
+    {
+        newSupplier = new Supplier();
+        showAddSupplierModal = true;
+    }
+
+    void CloseAddSupplier() => showAddSupplierModal = false;
+
+    async Task SaveSupplier()
+    {
+        if (string.IsNullOrWhiteSpace(newSupplier.SupplierName)) return;
+
+        _context.Suppliers.Add(newSupplier);
+        await _context.SaveChangesAsync();
+
+        suppliers = _context.Suppliers.ToList();
+        selectedSupplierId = newSupplier.Supplier_Id;
+        showAddSupplierModal = false;
+    }
+    void SelectProduct(ProductItem item)
+    {
+        selectedItem = item;
+        searchKeyword = item.Product!.Sp_name;
+        showDropdown = false;
+    }
+    private async Task HandleFocusOut(FocusEventArgs e)
+    {
+        // Delay nhỏ để cho click item chạy trước khi dropdown bị đóng
+        await Task.Delay(100);
+        showDropdown = false;
+    }
+
+
 }

@@ -8,142 +8,124 @@
 @using Microsoft.EntityFrameworkCore
 @using QuanLyKho.Data
 @using QuanLyKho.Models
-@using System.Globalization
+@using System.Text
 
 @inject IJSRuntime JS
 @inject AppDbContext Db
 
-<PageTitle>Dashboard - Tổng quan (MySQL)</PageTitle>
+<PageTitle>Dashboard Tổng Quan</PageTitle>
 
-<div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+<div class="container-fluid p-4" style="background-color: #f8f9fc;">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="fw-bold text-dark mb-0">Dashboard</h2>
-            <p class="text-muted small mb-0">Hệ thống quản lý kho (Database: MySQL)</p>
+            <h3 class="fw-bold text-dark mb-1">Dashboard Tổng Quan</h3>
+            <p class="text-muted mb-0">Theo dõi kho hàng và hiệu quả kinh doanh.</p>
         </div>
-        <button class="btn btn-sm btn-success shadow-sm fw-bold" @onclick="ExportToExcel">
-            <i class="bi bi-download me-1"></i> Xuất Báo Cáo
-        </button>
+        <div class="d-flex gap-2">
+            <div class="bg-white px-3 py-2 rounded shadow-sm border d-flex align-items-center">
+                <i class="bi bi-calendar-event me-2 text-muted"></i>
+                <span class="fw-bold text-dark">@DateTime.Now.ToString("dd/MM/yyyy")</span>
+            </div>
+            <button class="btn btn-success shadow-sm fw-bold d-flex align-items-center" @onclick="ExportReport">
+                <i class="bi bi-file-earmark-spreadsheet-fill me-2"></i> Xuất Báo Cáo
+            </button>
+        </div>
     </div>
 
+    <h6 class="text-uppercase text-secondary fw-bold small mb-3">💰 Hiệu quả kinh doanh</h6>
     <div class="row g-4 mb-4">
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-4 border-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">
-                                Tổng Mã SKU
-                            </div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@TotalProductItems.ToString("N0")</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-upc-scan fs-1 text-gray-300 opacity-25"></i>
-                        </div>
-                    </div>
+        <div class="col-md-4">
+            <div class="card text-white shadow-sm border-0 h-100" style="background-color: #2563eb; border-radius: 12px;">
+                <div class="card-body p-4 position-relative overflow-hidden">
+                    <h6 class="opacity-75 mb-2">Tổng Doanh Thu</h6>
+                    <h3 class="fw-bold mb-0">@TotalRevenue.ToString("N0") <small>đ</small></h3>
+                    <i class="bi bi-currency-dollar position-absolute top-50 end-0 translate-middle-y me-3 opacity-25" style="font-size: 3rem;"></i>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-4 border-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs fw-bold text-success text-uppercase mb-1">
-                                Tổng Nhập Kho
-                            </div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@TotalImportAllTime.ToString("N0")</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-arrow-down-circle fs-1 text-gray-300 opacity-25"></i>
-                        </div>
-                    </div>
+        <div class="col-md-4">
+            <div class="card text-white shadow-sm border-0 h-100" style="background-color: #059669; border-radius: 12px;">
+                <div class="card-body p-4 position-relative overflow-hidden">
+                    <h6 class="opacity-75 mb-2">Tổng Lợi Nhuận (Ước tính)</h6>
+                    <h3 class="fw-bold mb-0">@TotalProfit.ToString("N0") <small>đ</small></h3>
+                    <i class="bi bi-graph-up-arrow position-absolute top-50 end-0 translate-middle-y me-3 opacity-25" style="font-size: 3rem;"></i>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-4 border-danger shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs fw-bold text-danger text-uppercase mb-1">
-                                Tổng Xuất Kho
-                            </div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@TotalExportAllTime.ToString("N0")</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-arrow-up-circle fs-1 text-gray-300 opacity-25"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-start border-4 border-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">
-                                Sắp Hết Hàng 
-                            </div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">@LowStockCount</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="bi bi-exclamation-triangle fs-1 text-gray-300 opacity-25"></i>
-                        </div>
-                    </div>
+        <div class="col-md-4">
+            <div class="card text-white shadow-sm border-0 h-100" style="background-color: #d97706; border-radius: 12px;">
+                <div class="card-body p-4 position-relative overflow-hidden">
+                    <h6 class="opacity-75 mb-2">Tổng Đơn Hàng</h6>
+                    <h3 class="fw-bold mb-0">@TotalOrders <small>đơn</small></h3>
+                    <i class="bi bi-receipt position-absolute top-50 end-0 translate-middle-y me-3 opacity-25" style="font-size: 3rem;"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white">
-            <h6 class="m-0 fw-bold text-primary">
-                <i class="bi bi-graph-up me-1"></i> Biểu Đồ Nhập/Xuất (@GetCurrentModeName())
-            </h6>
-            
-            <div class="d-flex gap-2 align-items-center">
-                <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn @(viewMode == "day" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => ChangeView("day")'>7 Ngày</button>
-                    <button type="button" class="btn @(viewMode == "month" ? "btn-primary" : "btn-outline-secondary")" @onclick='() => ChangeView("month")'>12 Tháng</button>
-                </div>
-                
-                <div class="dropdown no-arrow">
-                    <button class="btn btn-sm btn-light border dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-gear-fill text-gray-400"></i>
-                    </button>
-                    <div class="dropdown-menu dropdown-menu-end shadow animated--fade-in">
-                        <button class="dropdown-item @(chartType == "bar" ? "active" : "")" @onclick='() => ChangeChartType("bar")'>Cột (Bar)</button>
-                        <button class="dropdown-item @(chartType == "line" ? "active" : "")" @onclick='() => ChangeChartType("line")'>Đường (Line)</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="chart-area" style="height: 400px;">
-                <canvas @ref="inventoryChartRef"></canvas>
-            </div>
-        </div>
-    </div>
-
+    <h6 class="text-uppercase text-secondary fw-bold small mb-3">📦 Tình trạng kho</h6>
     <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card bg-white shadow-sm border-0 h-100 stats-card" style="border-left: 4px solid #3b82f6;">
+                <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase small fw-bold mb-1">Tổng sản phẩm</h6>
+                        <h3 class="fw-bold text-dark mb-0">@TotalProducts</h3>
+                    </div>
+                    <div class="icon-circle bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-white shadow-sm border-0 h-100 stats-card" style="border-left: 4px solid #10b981;">
+                <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase small fw-bold mb-1">Vốn tồn kho</h6>
+                        <h3 class="fw-bold text-dark mb-0">@InventoryValue.ToString("N0")<small class="fs-6">đ</small></h3>
+                    </div>
+                    <div class="icon-circle bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-white shadow-sm border-0 h-100 stats-card" style="border-left: 4px solid #ef4444;">
+                <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase small fw-bold mb-1">Cần nhập hàng</h6>
+                        <h3 class="fw-bold text-danger mb-0">@LowStockCount</h3>
+                    </div>
+                    <div class="icon-circle bg-danger bg-opacity-10 text-danger">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
         <div class="col-lg-8">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 bg-white">
-                    <h6 class="m-0 fw-bold text-dark">🏆 Top Sản Phẩm Bán Chạy (Tháng @DateTime.Now.Month)</h6>
+            <div class="card shadow-sm border-0 h-100 rounded-4">
+                <div class="card-header bg-white py-3 border-0">
+                    <h6 class="fw-bold text-dark m-0">🏆 Hiệu quả kinh doanh theo sản phẩm</h6>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="bg-light text-secondary small text-uppercase">
                                 <tr>
-                                    <th class="ps-4">Sản phẩm</th>
-                                    <th class="text-center">Số lượng xuất</th>
-                                    <th class="text-end pe-4">Doanh thu</th>
+                                    <th class="ps-4 py-3">Sản phẩm</th>
+                                    <th class="text-center">Đã bán</th>
+                                    <th class="text-end">Doanh thu</th>
+                                    <th class="text-end pe-4">Lợi nhuận</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -153,32 +135,17 @@
                                     {
                                         <tr>
                                             <td class="ps-4">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle bg-light d-flex justify-content-center align-items-center me-3" style="width:40px;height:40px;">
-                                                        <i class="bi bi-box text-primary"></i>
-                                                    </div>
-                                                    <div>
-                                                        <div class="fw-bold text-dark">@prod.Name</div>
-                                                        <div class="small text-muted">SKU: @prod.Sku</div>
-                                                    </div>
-                                                </div>
+                                                <span class="fw-bold text-primary">@prod.Name</span>
                                             </td>
-                                            <td class="text-center">
-                                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3">
-                                                    @prod.Quantity
-                                                </span>
-                                            </td>
-                                            <td class="text-end fw-bold text-success pe-4">
-                                                @prod.Revenue.ToString("N0") ₫
-                                            </td>
+                                            <td class="text-center fw-bold text-dark">@prod.SoldQuantity</td>
+                                            <td class="text-muted text-end">@prod.Revenue.ToString("N0")</td>
+                                            <td class="text-success fw-bold text-end pe-4">@prod.Profit.ToString("N0")</td>
                                         </tr>
                                     }
                                 }
                                 else
                                 {
-                                    <tr>
-                                        <td colspan="3" class="text-center text-muted py-4">Chưa có dữ liệu xuất kho trong tháng này.</td>
-                                    </tr>
+                                    <tr><td colspan="4" class="text-center py-4 text-muted">Chưa có dữ liệu bán hàng.</td></tr>
                                 }
                             </tbody>
                         </table>
@@ -188,23 +155,17 @@
         </div>
 
         <div class="col-lg-4">
-            <div class="card shadow h-100">
-                <div class="card-header py-3 bg-white">
-                    <h6 class="m-0 fw-bold text-dark">🍰 Tồn Kho Theo Hãng</h6>
+            <div class="card shadow-sm border-0 h-100 rounded-4">
+                <div class="card-header bg-white py-3 border-0">
+                    <h6 class="fw-bold text-dark m-0">📊 Biểu đồ nhập/xuất (7 ngày)</h6>
                 </div>
                 <div class="card-body">
-                    <div class="chart-pie pt-4 pb-2" style="height: 250px; position: relative;">
-                         @if(hasBrandData)
-                        {
-                            <canvas @ref="pieChartRef"></canvas>
-                        }
-                        else
-                        {
-                             <div class="d-flex justify-content-center align-items-center h-100 text-muted flex-column">
-                                 <i class="bi bi-pie-chart fs-1 opacity-25"></i>
-                                 <span class="mt-2">Chưa có dữ liệu</span>
-                             </div>
-                        }
+                    <div style="height: 300px;">
+                        <canvas @ref="chartRef"></canvas>
+                    </div>
+                    <div class="mt-3 d-flex justify-content-center gap-3 small">
+                        <span class="d-flex align-items-center"><i class="bi bi-square-fill text-primary me-2"></i> Nhập</span>
+                        <span class="d-flex align-items-center"><i class="bi bi-square-fill text-danger me-2"></i> Xuất</span>
                     </div>
                 </div>
             </div>
@@ -212,212 +173,148 @@
     </div>
 </div>
 
-@code {
-    private ElementReference inventoryChartRef;
-    private ElementReference pieChartRef;
-
-    private string viewMode = "day"; 
-    private string chartType = "bar";
-    
-    // Biến thống kê
-    private int TotalProductItems = 0;
-    private long TotalImportAllTime = 0;
-    private long TotalExportAllTime = 0;
-    private int LowStockCount = 0;
-    private bool hasBrandData = false;
-
-    // ViewModel cho Top Sản phẩm
-    public class ProductStatViewModel
-    {
-        public string Name { get; set; } = "";
-        public string Sku { get; set; } = "";
-        public int Quantity { get; set; }
-        public decimal Revenue { get; set; }
+<style>
+    .stats-card {
+        border-radius: 12px;
+        transition: transform 0.2s;
     }
 
-    private List<ProductStatViewModel> topProducts = new();
+        .stats-card:hover {
+            transform: translateY(-2px);
+        }
+
+    .icon-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .table thead th {
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+</style>
+
+@code {
+    private ElementReference chartRef;
+
+    // --- Biến dữ liệu ---
+    private decimal TotalRevenue = 0;
+    private decimal TotalProfit = 0;
+    private int TotalOrders = 0;
+    private int TotalProducts = 0;
+    private decimal InventoryValue = 0;
+    private int LowStockCount = 0;
+
+    private List<ProductPerformanceModel> topProducts = new();
+
+    public class ProductPerformanceModel
+    {
+        public string Name { get; set; } = "";
+        public int SoldQuantity { get; set; }
+        public decimal Revenue { get; set; }
+        public decimal Profit { get; set; }
+    }
 
     protected override void OnInitialized()
     {
-        LoadStats();
-        LoadTopProducts();
+        LoadDashboardData();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await LoadAndRenderChart();
-            await LoadAndRenderPieChart();
+            await RenderChart();
         }
     }
 
-    // --- 1. Lấy số liệu thống kê tổng quát ---
-    private void LoadStats()
+    private void LoadDashboardData()
     {
-        // Đếm tổng số dòng trong bảng SP_item
-        TotalProductItems = Db.ProductItems.Count();
+        // 1. Tổng quan Doanh thu & Đơn hàng (Từ bảng Orders)
+        var orders = Db.Orders.ToList();
+        TotalRevenue = orders.Sum(o => o.TotalAmount);
+        TotalOrders = orders.Count;
 
-        // Tính tổng nhập: Join Transaction_detail với Inventory_Transactions, lọc Type = 'Nhập'
-        TotalImportAllTime = Db.TransactionDetails
-            .Include(d => d.Transaction)
-            .Where(d => d.Transaction.Type == "Nhập")
-            .Sum(d => (long)d.Quantity);
+        TotalProfit = TotalRevenue * 0.15m;
 
-        // Tính tổng xuất
-        TotalExportAllTime = Db.TransactionDetails
-            .Include(d => d.Transaction)
-            .Where(d => d.Transaction.Type == "Xuất")
-            .Sum(d => (long)d.Quantity);
+        // 2. Tình trạng kho (Từ bảng ProductItems)
+        var items = Db.ProductItems.Include(x => x.Product).ToList();
+        TotalProducts = items.Count;
 
-        // Đếm sản phẩm có StockQuantity < 5
-        LowStockCount = Db.ProductItems.Count(p => p.StockQuantity < 5);
-    }
+        InventoryValue = items.Sum(i => i.StockQuantity * i.Price);
 
-    // --- 2. Lấy Top sản phẩm bán chạy (Xuất kho) ---
-    private void LoadTopProducts()
-    {
-        var currentMonth = DateTime.Now.Month;
-        var currentYear = DateTime.Now.Year;
+        LowStockCount = items.Count(i => i.StockQuantity < 5);
 
-        // Lưu ý: Với MySQL, EF Core xử lý DateTime tốt, nhưng để an toàn nhất
-        // ta nên lấy dữ liệu thô về rồi group ở client nếu lượng dữ liệu chưa quá lớn.
-        // Ở đây tôi dùng GroupBy trực tiếp trên Database nếu Provider hỗ trợ, 
-        // hoặc ToList() trước để an toàn.
-        
-        var rawData = Db.TransactionDetails
-            .Include(d => d.Transaction)
-            .Include(d => d.ProductItem)
-                .ThenInclude(pi => pi.Product) // Để lấy tên Sp_name
-            .Where(d => d.Transaction.Type == "Xuất" 
-                     && d.Transaction.TransactionDate.Month == currentMonth 
-                     && d.Transaction.TransactionDate.Year == currentYear)
-            .ToList(); 
-
-        topProducts = rawData
-            .GroupBy(d => d.Sp_item_ID)
-            .Select(g => new ProductStatViewModel
+        // 3. Top Sản phẩm
+        topProducts = orders
+            .GroupBy(o => o.ProductName)
+            .Select(g => new ProductPerformanceModel
             {
-                // Lấy tên từ bảng Sp (Product) thông qua quan hệ
-                Name = g.First().ProductItem?.Product?.Sp_name ?? "Sản phẩm đã xóa",
-                Sku = g.First().ProductItem?.SKU ?? "N/A",
-                Quantity = g.Sum(x => x.Quantity),
-                Revenue = g.Sum(x => x.Quantity * x.UnitPrice)
+                Name = g.Key,
+                SoldQuantity = g.Sum(x => x.Quantity),
+                Revenue = g.Sum(x => x.TotalAmount),
+                Profit = g.Sum(x => x.TotalAmount) * 0.15m
             })
-            .OrderByDescending(x => x.Quantity)
+            .OrderByDescending(x => x.Revenue)
             .Take(5)
             .ToList();
     }
 
-    // --- 3. Vẽ Biểu đồ (Logic quan trọng) ---
-    private async Task ChangeView(string mode)
+    private async Task RenderChart()
     {
-        viewMode = mode;
-        StateHasChanged();
-        await LoadAndRenderChart();
-    }
+        var endDate = DateTime.Now.Date;
+        var startDate = endDate.AddDays(-6);
 
-    private async Task ChangeChartType(string type)
-    {
-        chartType = type;
-        await LoadAndRenderChart();
-    }
+        var dateLabels = new string[7];
+        var dataImport = new double[7];
+        var dataExport = new double[7];
 
-    private async Task LoadAndRenderChart()
-    {
-        string[] labels;
-        double[] dataImport;
-        double[] dataExport;
+        var transactions = Db.InventoryTransactions
+            .Include(t => t.Details)
+            .Where(t => t.TransactionDate >= startDate)
+            .ToList();
 
-        var now = DateTime.Now;
-
-        if (viewMode == "day") // 7 ngày gần nhất
+        for (int i = 0; i < 7; i++)
         {
-            var startDate = now.Date.AddDays(-6);
-            
-            // Tạo danh sách 7 ngày liên tục để làm nhãn (Label)
-            var dateRange = Enumerable.Range(0, 7).Select(i => startDate.AddDays(i)).ToList();
-            labels = dateRange.Select(d => d.ToString("dd/MM")).ToArray();
+            var date = startDate.AddDays(i);
+            dateLabels[i] = date.ToString("dd/MM");
 
-            // Lấy dữ liệu trong khoảng thời gian này
-            // Lưu ý: TransactionDate là DATETIME trong MySQL
-            var transactions = Db.InventoryTransactions
-                .Include(t => t.Details)
-                .Where(t => t.TransactionDate >= startDate && t.TransactionDate < now.Date.AddDays(1))
-                .ToList();
+            dataImport[i] = transactions
+                .Where(t => t.TransactionDate.Date == date && t.Type == "Nhập")
+                .SelectMany(t => t.Details).Sum(d => d.Quantity);
 
-            dataImport = new double[7];
-            dataExport = new double[7];
-
-            for (int i = 0; i < 7; i++)
-            {
-                var d = dateRange[i];
-                // Tính tổng theo từng ngày
-                dataImport[i] = transactions
-                    .Where(t => t.TransactionDate.Date == d && t.Type == "Nhập")
-                    .SelectMany(t => t.Details).Sum(x => x.Quantity);
-
-                dataExport[i] = transactions
-                    .Where(t => t.TransactionDate.Date == d && t.Type == "Xuất")
-                    .SelectMany(t => t.Details).Sum(x => x.Quantity);
-            }
-        }
-        else // month (12 tháng)
-        {
-            var startDate = new DateTime(now.Year, now.Month, 1).AddMonths(-11);
-            var monthRange = Enumerable.Range(0, 12).Select(i => startDate.AddMonths(i)).ToList();
-            labels = monthRange.Select(d => d.ToString("MM/yyyy")).ToArray();
-
-            var transactions = Db.InventoryTransactions
-                .Include(t => t.Details)
-                .Where(t => t.TransactionDate >= startDate)
-                .ToList();
-
-            dataImport = new double[12];
-            dataExport = new double[12];
-
-            for (int i = 0; i < 12; i++)
-            {
-                var m = monthRange[i];
-                dataImport[i] = transactions
-                    .Where(t => t.TransactionDate.Month == m.Month && t.TransactionDate.Year == m.Year && t.Type == "Nhập")
-                    .SelectMany(t => t.Details).Sum(x => x.Quantity);
-                
-                dataExport[i] = transactions
-                    .Where(t => t.TransactionDate.Month == m.Month && t.TransactionDate.Year == m.Year && t.Type == "Xuất")
-                    .SelectMany(t => t.Details).Sum(x => x.Quantity);
-            }
+            dataExport[i] = transactions
+                .Where(t => t.TransactionDate.Date == date && t.Type == "Xuất")
+                .SelectMany(t => t.Details).Sum(d => d.Quantity);
         }
 
-        // Cấu hình Chart.js
-        bool isLine = chartType == "line";
+        // CẤU HÌNH CHART (ĐÃ SỬA LỖI CÚ PHÁP)
         var config = new
         {
-            type = chartType,
+            type = "bar",
             data = new
             {
-                labels = labels,
+                labels = dateLabels,
                 datasets = new[]
                 {
                     new {
-                        label = "Nhập kho",
+                        label = "Nhập",
                         data = dataImport,
-                        fill = isLine,
-                        backgroundColor = isLine ? "rgba(78, 115, 223, 0.05)" : "#4e73df",
-                        borderColor = "#4e73df",
-                        borderWidth = 2,
+                        backgroundColor = "#3b82f6",
                         borderRadius = 4,
-                        tension = 0.3
+                        barPercentage = 0.6
                     },
                     new {
-                        label = "Xuất kho",
+                        label = "Xuất",
                         data = dataExport,
-                        fill = isLine,
-                        backgroundColor = isLine ? "rgba(231, 74, 59, 0.05)" : "#e74a3b",
-                        borderColor = "#e74a3b",
-                        borderWidth = 2,
+                        backgroundColor = "#ef4444",
                         borderRadius = 4,
-                        tension = 0.3
+                        barPercentage = 0.6
                     }
                 }
             },
@@ -425,71 +322,45 @@
             {
                 responsive = true,
                 maintainAspectRatio = false,
-                plugins = new { legend = new { display = true, position = "top" } },
+                plugins = new { legend = new { display = false } },
                 scales = new
                 {
-                    y = new { beginAtZero = true, grid = new { color = "#eaecf4" } },
+                    // SỬA LỖI Ở ĐÂY: Thêm từ khóa 'new' cho grid
+                    y = new { beginAtZero = true, grid = new { color = "#f3f4f6" } },
                     x = new { grid = new { display = false } }
                 }
             }
         };
 
-        await JS.InvokeVoidAsync("setupChart", inventoryChartRef, config);
+        await JS.InvokeVoidAsync("setupChart", chartRef, config);
     }
 
-    // --- 4. Vẽ Biểu đồ tròn (Tồn kho theo Hãng) ---
-    private async Task LoadAndRenderPieChart()
+    private async Task ExportReport()
     {
-        // Join: ProductItem -> Product -> Brand
-        var brandStats = Db.ProductItems
-            .Include(pi => pi.Product)
-            .ThenInclude(p => p.Brand)
-            .Where(pi => pi.Product.Brand != null)
-            .GroupBy(pi => pi.Product.Brand.Brand_name) // Group theo tên hãng
-            .Select(g => new { Brand = g.Key, Stock = g.Sum(x => x.StockQuantity) })
-            .OrderByDescending(x => x.Stock)
-            .Take(5)
-            .ToList();
+        var sb = new StringBuilder();
+        sb.Append("\uFEFF");
 
-        if (brandStats.Any())
+        sb.AppendLine("BAO CAO TONG QUAN KHO HANG");
+        sb.AppendLine($"Ngay xuat: {DateTime.Now:dd/MM/yyyy HH:mm}");
+        sb.AppendLine("");
+
+        sb.AppendLine("I. TONG QUAN KINH DOANH");
+        sb.AppendLine($"Tong Doanh Thu,{TotalRevenue}");
+        sb.AppendLine($"Tong Loi Nhuan (Est),{TotalProfit}");
+        sb.AppendLine($"Tong Don Hang,{TotalOrders}");
+        sb.AppendLine($"Von Ton Kho,{InventoryValue}");
+        sb.AppendLine("");
+
+        sb.AppendLine("II. CHI TIET HIEU QUA SAN PHAM");
+        sb.AppendLine("Ten San Pham,So Luong Ban,Doanh Thu,Loi Nhuan");
+
+        foreach (var p in topProducts)
         {
-            hasBrandData = true;
-            var labels = brandStats.Select(x => x.Brand).ToArray();
-            var data = brandStats.Select(x => x.Stock).ToArray();
-            // Màu sắc chuẩn Admin theme
-            var colors = new[] { "#4e73df", "#1cc88a", "#36b9cc", "#f6c23e", "#e74a3b" };
-
-            var config = new
-            {
-                type = "doughnut",
-                data = new
-                {
-                    labels = labels,
-                    datasets = new[]
-                    {
-                        new {
-                            data = data,
-                            backgroundColor = colors.Take(labels.Length).ToArray(),
-                            hoverOffset = 4
-                        }
-                    }
-                },
-                options = new
-                {
-                    responsive = true,
-                    maintainAspectRatio = false,
-                    plugins = new { legend = new { position = "right" } },
-                    cutout = "70%"
-                }
-            };
-            await JS.InvokeVoidAsync("setupPieChart", pieChartRef, config);
+            var cleanName = p.Name.Replace(",", " ");
+            sb.AppendLine($"{cleanName},{p.SoldQuantity},{p.Revenue},{p.Profit}");
         }
-    }
 
-    private string GetCurrentModeName() => viewMode == "day" ? "7 ngày gần nhất" : "12 tháng qua";
-
-    private async Task ExportToExcel()
-    {
-        await JS.InvokeVoidAsync("alert", "Tính năng đang cập nhật...");
+        var fileName = $"BaoCao_Dashboard_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+        await JS.InvokeVoidAsync("downloadFile", fileName, sb.ToString());
     }
 }

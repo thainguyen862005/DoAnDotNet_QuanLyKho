@@ -14,131 +14,135 @@
         <p class="text-muted">Theo dõi các thao tác kho (Admin)</p>
     </div>
 
-    <!-- BỘ LỌC -->
+    <!-- THANH TÌM KIẾM + LỌC LOẠI -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
-            <div class="row g-2 align-items-center">
-
-                <div class="col-md-4">
+            <div class="row g-2">
+                <div class="col-md-8">
                     <input class="form-control"
-                           placeholder="Tìm theo mã sản phẩm..."
-                           @bind="SearchTerm"
+                           placeholder="Tìm theo tên nhân viên..."
+                           @bind="StaffSearch"
                            @bind:event="oninput" />
                 </div>
-
-                <div class="col-md-2">
+                <div class="col-md-4">
                     <select class="form-select" @bind="TypeFilter">
-                        <option value="">Tất cả</option>
-                        <option value="Nhập">Nhập</option>
-                        <option value="Xuất">Xuất</option>
+                        <option value="">Tất cả loại</option>
+                        <option value="Nhập">Nhập kho</option>
+                        <option value="Xuất">Xuất kho</option>
                     </select>
                 </div>
-
-                <div class="col-md-2">
-                    <input type="date" class="form-control" @bind="FromDate" />
-                </div>
-
-                <div class="col-md-2">
-                    <input type="date" class="form-control" @bind="ToDate" />
-                </div>
-
             </div>
         </div>
     </div>
 
-    <!-- BẢNG LỊCH SỬ -->
-    <div class="card border-0 shadow-sm overflow-hidden">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="bg-light">
-                <tr class="text-uppercase text-secondary small fw-bold">
-                    <th class="ps-4">Ngày</th>
-                    <th>Mã sản phẩm</th>
-                    <th>Trạng Thái</th>
-                    <th class="text-center">Số lượng</th>
-                    <th>Nhân viên</th>
-                    <th>Phiếu</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (FilteredLogs.Any())
-                {
-                    @foreach (var h in FilteredLogs)
+    <!-- BẢNG CÓ SCROLL -->
+    <div class="card border-0 shadow-sm">
+        <div style="max-height: 500px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light sticky-top">
+                    <tr class="text-uppercase text-secondary small fw-bold">
+                        <th class="ps-4">Ngày</th>
+                        <th>Mã phiếu</th>
+                        <th>Loại</th>
+                        <th>Nhà cung cấp</th>
+                        <th>Nhân viên</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (FilteredLogs.Any())
+                    {
+                        @foreach (var h in FilteredLogs)
+                        {
+                            <tr>
+                                <td class="ps-4">@h.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="fw-bold text-primary">@h.ReceiptCode</td>
+                                <td>
+                                    <span class="badge rounded-pill px-3 py-2 @GetTypeBadge(h.Type)">
+                                        @h.Type
+                                    </span>
+                                </td>
+                                <td>
+                                    @(h.Type == "Nhập" ? h.SupplierName : "---")
+                                </td>
+                                <td>@h.StaffName</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary"
+                                            @onclick="() => XemPhieu(h)">
+                                        Xem phiếu
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
                     {
                         <tr>
-                            <td class="ps-4">
-                                @h.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                            </td>
-                            <td class="fw-bold">@h.SKU</td>
-                            <td>
-                                <span class="badge rounded-pill px-3 py-2 @GetTypeBadge(h.Type)">
-                                    @h.Type
-                                </span>
-                            </td>
-                            <td class="text-center fw-bold">
-                                <span class="@(h.Type == "Nhập" ? "text-success" : "text-danger")">
-                                    @(h.Type == "Nhập" ? "+" : "-")@h.Quantity
-                                </span>
-                            </td>
-                            <td>@h.StaffName</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary"
-                                        @onclick="() => XemPhieu(h)">
-                                    @h.ReceiptCode
-                                </button>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                Không có dữ liệu
                             </td>
                         </tr>
                     }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="6" class="text-center py-5 text-muted">
-                            Không có dữ liệu
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
+<!-- MODAL CHI TIẾT PHIẾU -->
 @if (showReceiptModal && selectedLog != null)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-dialog-centered">
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content shadow-lg">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">Chi tiết phiếu kho</h5>
+                    <h5 class="modal-title">Chi tiết phiếu kho - @selectedLog.ReceiptCode</h5>
                     <button type="button" class="btn-close btn-close-white" @onclick="DongModal"></button>
                 </div>
 
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-4 text-center">
-                            @if (!string.IsNullOrEmpty(receiptImageUrl))
-                            {
-                                <img src="@receiptImageUrl" class="img-fluid rounded shadow-sm" />
-                            }
-                            else
-                            {
-                                <div class="text-muted">Không có ảnh</div>
-                            }
-                        </div>
+                    <p><b>Ngày:</b> @selectedLog.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p><b>Nhân viên:</b> @selectedLog.StaffName</p>
 
-                        <div class="col-md-8">
-                            <p><b>Mã phiếu:</b> @selectedLog.ReceiptCode</p>
-                            <p><b>Ngày:</b> @selectedLog.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
-                            <hr />
-                            <p><b>Tên sản phẩm:</b> @receiptProductName</p>
-                            <p><b>Mã sản phẩm:</b> @selectedLog.SKU</p>
-                            <p><b>Loại:</b> @selectedLog.Type</p>
-                            <p><b>Số lượng:</b> @selectedLog.Quantity</p>
-                            <p><b>Nhân viên:</b> @selectedLog.StaffName</p>
-                        </div>
-                    </div>
+                    @if (selectedLog.Type == "Nhập")
+                    {
+                        <hr />
+                        <p><b>Sản phẩm:</b> @receiptDetails.First().ProductName</p>
+                        <p><b>SKU:</b> @receiptDetails.First().SKU</p>
+                        <p><b>Số lượng:</b> @receiptDetails.First().Quantity</p>
+                        <p><b>Giá nhập:</b> @receiptDetails.First().Price.ToString("N0") đ</p>
+                        <p><b>Nhà cung cấp:</b> @selectedLog.SupplierName</p>
+                    }
+                    else
+                    {
+                        <table class="table table-bordered mt-3">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th>SKU</th>
+                                    <th class="text-center">SL</th>
+                                    <th class="text-end">Đơn giá</th>
+                                    <th class="text-end">Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in receiptDetails)
+                                {
+                                    <tr>
+                                        <td>@item.ProductName</td>
+                                        <td>@item.SKU</td>
+                                        <td class="text-center">@item.Quantity</td>
+                                        <td class="text-end">@item.Price.ToString("N0") đ</td>
+                                        <td class="text-end">@((item.Price * item.Quantity).ToString("N0")) đ</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
                 </div>
+
                 <div class="modal-footer">
-                    <button class="btn btn-success" @onclick="DongModal">OK</button>
+                    <button class="btn btn-secondary" @onclick="DongModal">Đóng</button>
                 </div>
             </div>
         </div>
@@ -146,73 +150,52 @@
 }
 
 @code {
-    private string SearchTerm = "";
+    private string StaffSearch = "";
     private string TypeFilter = "";
-    private DateTime? FromDate;
-    private DateTime? ToDate;
-
     private bool showReceiptModal = false;
     private HistoryViewModel? selectedLog;
-    private string? receiptImageUrl;
-    private string? receiptProductName;
-
+    private List<ReceiptDetailVM> receiptDetails = new();
     private List<HistoryViewModel> logs = new();
 
     protected override void OnInitialized()
     {
-        logs = _context.TransactionDetails
-            .Include(d => d.Transaction)
-                .ThenInclude(t => t.User)
-            .Include(d => d.ProductItem)
-                .ThenInclude(i => i.Product)
-            .Select(d => new HistoryViewModel
+        logs = _context.InventoryTransactions
+            .Include(t => t.User)
+            .Include(t => t.Supplier)
+            .OrderByDescending(t => t.TransactionDate)
+            .Select(t => new HistoryViewModel
             {
-                TransactionId = d.TransactionID,
-                SpItemId = d.Sp_item_ID,
-                CreatedAt = d.Transaction.TransactionDate,
-                SKU = d.ProductItem.SKU ?? "",
-                Type = d.Transaction.Type ?? "",
-                Quantity = d.Quantity,
-                StaffName = d.Transaction.User.Username,
-                ReceiptCode = "RC" + d.TransactionID + d.Transaction.TransactionDate.ToString("ddMMyy")
-            })
-            .OrderByDescending(x => x.CreatedAt)
-            .ToList();
+                TransactionId = t.TransactionID,
+                CreatedAt = t.TransactionDate,
+                Type = t.Type,
+                StaffName = t.User.Username,
+                SupplierName = t.Supplier != null ? t.Supplier.SupplierName : "",
+                ReceiptCode = "PN-" + t.TransactionID.ToString("0000")
+            }).ToList();
     }
 
     private IEnumerable<HistoryViewModel> FilteredLogs =>
         logs.Where(h =>
-            (string.IsNullOrWhiteSpace(SearchTerm) || h.SKU.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)) &&
-            (string.IsNullOrWhiteSpace(TypeFilter) || h.Type == TypeFilter) &&
-            (!FromDate.HasValue || h.CreatedAt.Date >= FromDate.Value) &&
-            (!ToDate.HasValue || h.CreatedAt.Date <= ToDate.Value)
+            (string.IsNullOrWhiteSpace(StaffSearch) ||
+             h.StaffName.Contains(StaffSearch, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrWhiteSpace(TypeFilter) || h.Type == TypeFilter)
         );
-
-    private string GetTypeBadge(string type) => type switch
-    {
-        "Nhập" => "bg-success-subtle text-success",
-        "Xuất" => "bg-danger-subtle text-danger",
-        _ => "bg-secondary text-white"
-    };
 
     private void XemPhieu(HistoryViewModel log)
     {
         selectedLog = log;
 
-        var item = _context.ProductItems
-            .Include(i => i.Product)
-            .FirstOrDefault(i => i.Sp_item_id == log.SpItemId);
-
-        if (item != null)
-        {
-            receiptImageUrl = item.Product.ImageUrl;
-            receiptProductName = item.Product.Sp_name;
-        }
-        else
-        {
-            receiptImageUrl = null;
-            receiptProductName = "Không tìm thấy sản phẩm";
-        }
+        receiptDetails = _context.TransactionDetails
+            .Where(d => d.TransactionID == log.TransactionId)
+            .Include(d => d.ProductItem)
+                .ThenInclude(i => i.Product)
+            .Select(d => new ReceiptDetailVM
+            {
+                ProductName = d.ProductItem.Product.Sp_name,
+                SKU = d.ProductItem.SKU,
+                Quantity = d.Quantity,
+                Price = d.UnitPrice
+            }).ToList();
 
         showReceiptModal = true;
     }
@@ -220,20 +203,28 @@
     private void DongModal()
     {
         showReceiptModal = false;
-        selectedLog = null;
-        receiptImageUrl = null;
-        receiptProductName = null;
+        receiptDetails.Clear();
     }
+
+    private string GetTypeBadge(string type) => type == "Nhập"
+        ? "bg-success-subtle text-success"
+        : "bg-danger-subtle text-danger";
 
     public class HistoryViewModel
     {
-        public DateTime CreatedAt { get; set; }
-        public string SKU { get; set; } = "";
-        public string Type { get; set; } = "";
-        public int Quantity { get; set; }
-        public string StaffName { get; set; } = "";
-        public string ReceiptCode { get; set; } = "";
         public int TransactionId { get; set; }
-        public int SpItemId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string Type { get; set; } = "";
+        public string StaffName { get; set; } = "";
+        public string SupplierName { get; set; } = "";
+        public string ReceiptCode { get; set; } = "";
+    }
+
+    public class ReceiptDetailVM
+    {
+        public string ProductName { get; set; } = "";
+        public string SKU { get; set; } = "";
+        public int Quantity { get; set; }
+        public decimal Price { get; set; }
     }
 }
