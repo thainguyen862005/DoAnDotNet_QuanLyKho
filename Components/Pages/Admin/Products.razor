@@ -1,223 +1,414 @@
 @page "/admin/products"
-@using QuanLyKho.Data
-@using QuanLyKho.Models
-@using Microsoft.EntityFrameworkCore
 @rendermode InteractiveServer
-@layout Components.Layout.AdminLayout
+@layout AdminLayout
 
-@inject AppDbContext Db
+@inject IProductService ProductService
+@inject IBrandService BrandService
+@inject IWebHostEnvironment Env
 
-<div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
-        <div>
-            <h2 class="fw-bold mb-0">Quản lý sản phẩm</h2>
-            <p class="text-muted">Danh sách biến thể sản phẩm trong kho</p>
-        </div>
-        <button class="btn btn-success px-4 py-2 fw-bold" @onclick="OpenAddModal">
-            <i class="bi bi-plus-circle"></i> + Thêm sản phẩm
+@using QuanLyKho.Models
+@using QuanLyKho.Services
+@using QuanLyKho.Components.Layout
+@using Microsoft.AspNetCore.Components.Forms
+
+<h3>Quản lý sản phẩm</h3>
+
+<div class="row mb-3">
+    <div class="col">
+        <input class="form-control"
+               placeholder="Tìm theo tên"
+               @bind="search"
+               @bind:event="oninput" />
+    </div>
+
+    <div class="col">
+        <select class="form-select" @bind="brandId">
+            <option value="0">Tất cả hãng</option>
+            @foreach (var b in brands)
+            {
+                <option value="@b.Brand_Id">@b.Brand_name</option>
+            }
+        </select>
+    </div>
+
+    <div class="col">
+        <input type="number"
+               class="form-control"
+               placeholder="Giá từ"
+               @bind="minPrice" />
+    </div>
+
+    <div class="col">
+        <input type="number"
+               class="form-control"
+               placeholder="Giá đến"
+               @bind="maxPrice" />
+    </div>
+
+    <div class="col-md-3 text-end">
+        <button class="btn btn-success" @onclick="OpenAdd">
+            + Thêm sản phẩm
         </button>
-    </div>
-
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-2">
-            <input class="form-control"
-                   placeholder="Tìm theo tên, SKU, hãng..."
-                   @bind="SearchTerm"
-                   @bind:event="oninput" />
-        </div>
-    </div>
-
-    <div class="card border-0 shadow-sm overflow-hidden">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="bg-light">
-                <tr class="text-secondary small fw-bold text-uppercase" style="font-size: 11px;">
-                    <th class="ps-4 py-3">Sản phẩm</th>
-                    <th>SKU</th>
-                    <th>Hãng</th>
-                    <th>Dung lượng</th>
-                    <th class="text-end">Giá</th>
-                    <th class="text-center">Tồn kho</th>
-                    <th class="text-end pe-4">Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (FilteredItems.Any())
-                {
-                    @foreach (var item in FilteredItems)
-                    {
-                        <tr>
-                            <td class="ps-4 fw-bold">@item.Product?.Sp_name</td>
-                            <td>@item.SKU</td>
-                            <td>@item.Product?.Brand?.Brand_name</td>
-                            <td>@item.Storage</td>
-                            <td class="text-end text-primary fw-bold">@item.Price.ToString("N0") đ</td>
-                            <td class="text-center">
-                                <span class="@(item.StockQuantity < 5 ? "text-danger fw-bold" : "")">
-                                    @item.StockQuantity
-                                </span>
-                            </td>
-                            <td class="text-end pe-4">
-                                <button class="btn btn-sm" @onclick="() => OpenEditModal(item)">✏️</button>
-                                <button class="btn btn-sm" @onclick="() => ConfirmDelete(item)">🗑️</button>
-                            </td>
-                        </tr>
-                    }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
-                            Không có dữ liệu
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
     </div>
 </div>
 
-@if (IsShowModal)
+<table class="table table-bordered align-middle">
+    <thead>
+        <tr>
+            <th>Ảnh</th>
+            <th>Sản phẩm</th>
+            <th>Hãng</th>
+            <th class="text-end">Giá</th>
+            <th class="text-center">Kho</th>
+            <th class="text-end">Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in PagedProducts)
+        {
+            <tr>
+                <td style="width:80px">
+                    @if (!string.IsNullOrEmpty(p.ImageUrl))
+                    {
+                        <img src="@p.ImageUrl" width="60" class="rounded" />
+                    }
+                </td>
+                <td>
+                    <div class="fw-bold">@p.Sp_name</div>
+                    <div class="text-muted small">
+                        Mã: @Sku(p)
+                    </div>
+                    @if (!string.IsNullOrEmpty(p.Specifications))
+                    {
+                        <div class="text-secondary small">
+                            Dung lượng: @p.Specifications
+                        </div>
+                    }
+                </td>
+                <td>@p.Brand?.Brand_name</td>
+
+                <td class="text-end fw-bold text-primary">
+                    @p.Price.ToString("N0") ₫
+                </td>
+
+                <td class="text-center">
+                    <span class="@(p.Quantity == 0 ? "text-danger fw-bold" : "")">
+                        @p.Quantity
+                    </span>
+                </td>
+
+                <td class="text-end">
+                    <button class="btn btn-sm btn-outline-primary me-1"
+                            @onclick="async () => await ViewDetail(p)">👁</button>
+                    <button class="btn btn-sm btn-outline-warning me-1"
+                            @onclick="() => OpenEdit(p)">✏️</button>
+                    <button class="btn btn-sm btn-outline-danger"
+                            @onclick="() => ConfirmDelete(p)">🗑</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+ @if (TotalPages > 1)
+    {
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <span class="text-muted small">
+                Trang @currentPage / @TotalPages
+            </span>
+
+            <ul class="pagination mb-0">
+                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => currentPage--">«</button>
+                </li>
+
+                @for (int i = 1; i <= TotalPages; i++)
+                {
+                    <li class="page-item @(i == currentPage ? "active" : "")">
+                        <button class="page-link"
+                                @onclick="() => currentPage = i">@i</button>
+                    </li>
+                }
+
+                <li class="page-item @(currentPage == TotalPages ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => currentPage++">»</button>
+                </li>
+            </ul>
+        </div>
+    }
+@if (ShowForm)
 {
-    <div class="modal fade show d-block" style="background:rgba(0,0,0,.5)">
-        <div class="modal-dialog modal-dialog-centered">
+    <div class="modal fade show d-block"
+         style="background:rgba(0,0,0,.5)">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="fw-bold">@(IsEdit ? "Sửa sản phẩm" : "Thêm sản phẩm")</h5>
-                    <button class="btn-close" @onclick="CloseModal"></button>
+                    <h5 class="fw-bold">
+                        @(IsEdit ? "Sửa sản phẩm" : "Thêm sản phẩm")
+                    </h5>
+                    <button class="btn-close" @onclick="CloseForm"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label>Tên sản phẩm</label>
-                        <input class="form-control" @bind="EditingProductName" />
+               <div class="modal-body">
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Tên sản phẩm</label>
+                        <input class="form-control"
+                            @bind="Editing.Sp_name" />
                     </div>
-
-                    <div class="mb-3">
-                        <label>Hãng</label>
-                        <select class="form-select" @bind="EditingBrandId">
-                            @foreach (var b in Brands)
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Dung lượng</label>
+                        <input class="form-control"
+                            placeholder="256GB, 512GB..."
+                            @bind="Editing.Specifications" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Mô tả sản phẩm</label>
+                        <textarea class="form-control"
+                                rows="3"
+                                @bind="Editing.Description"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label fw-semibold">Giá bán (₫)</label>
+                            <input type="number" min="0"
+                                class="form-control"
+                                @bind="Editing.Price" />
+                        </div>
+                        <div class="col">
+                            <label class="form-label fw-semibold">Số lượng tồn</label>
+                            <input type="number" min="0"
+                                class="form-control"
+                                @bind="Editing.Quantity" />
+                        </div>
+                    </div>
+                    <div class="mb-2 mt-2">
+                        <label class="form-label fw-semibold">Hãng sản xuất</label>
+                        <select class="form-select"
+                                @bind="Editing.Brands_id">
+                            <option value="">-- Chọn hãng --</option>
+                            @foreach (var b in brands)
                             {
                                 <option value="@b.Brand_Id">@b.Brand_name</option>
                             }
                         </select>
                     </div>
 
-                    <div class="mb-3">
-                        <label>SKU</label>
-                        <input class="form-control" @bind="EditingItem.SKU" />
-                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Ảnh sản phẩm</label>
+                        <InputFile OnChange="UploadImage" />
 
-                    <div class="mb-3">
-                        <label>Dung lượng</label>
-                        <input class="form-control" @bind="EditingItem.Storage" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label>Giá</label>
-                        <input type="number" class="form-control" @bind="EditingItem.Price" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label>Tồn kho</label>
-                        <input type="number" class="form-control" @bind="EditingItem.StockQuantity" />
+                        @if (!string.IsNullOrEmpty(Editing.ImageUrl))
+                        {
+                            <div class="mt-2">
+                                <img src="@Editing.ImageUrl"
+                                    width="80"
+                                    class="mt-2 rounded" />
+                            </div>
+                        }
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="CloseModal">Hủy</button>
-                    <button class="btn btn-success" @onclick="SaveProduct">Lưu</button>
+                    <button class="btn btn-secondary" @onclick="CloseForm">Hủy</button>
+                    <button class="btn btn-success" @onclick="Save">Lưu</button>
                 </div>
             </div>
         </div>
     </div>
 }
+@if (ShowDetail)
+{
+    <div class="modal fade show d-block" style="background:rgba(0,0,0,.5)">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="fw-bold">Chi tiết sản phẩm</h5>
+                    <button class="btn-close"
+                            @onclick="() => ShowDetail = false"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(Detail.ImageUrl))
+                    {
+                        <div class="text-center mb-3">
+                            <img src="@Detail.ImageUrl"
+                                class="img-fluid rounded shadow"
+                                style="max-width:250px" />
+                        </div>
+                    }
+                    <h4>@Detail.Sp_name</h4>
+                    <p><strong>Mã:</strong> @Sku(Detail)</p>
+                    <p><strong>Hãng:</strong> @Detail.Brand?.Brand_name</p>
+                    <p><strong>Dung lượng:</strong> @Detail.Specifications</p>
+                    <p><strong>Mô tả:</strong><br />@Detail.Description</p>
+                    <p class="fw-bold text-primary">
+                        Giá: @Detail.Price.ToString("N0") ₫
+                    </p>
+                </div>
 
+            </div>
+        </div>
+    </div>
+}
+@if (ShowDelete)
+{
+    <div class="modal fade show d-block"
+         style="background:rgba(0,0,0,.5)">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 shadow">
+
+                <div class="modal-body text-center p-4">
+                    <div class="text-danger fs-1 mb-2">🗑</div>
+
+                    <h5 class="fw-bold mb-2">Xác nhận xóa?</h5>
+
+                    <p class="mb-3">
+                        Bạn có chắc muốn xóa<br />
+                        <strong class="text-danger">
+                            @Deleting?.Sp_name
+                        </strong>
+                    </p>
+
+                    <div class="d-flex justify-content-center gap-2">
+                        <button class="btn btn-danger px-4"
+                                @onclick="Delete">
+                            Xóa
+                        </button>
+                        <button class="btn btn-outline-secondary px-4"
+                                @onclick="() => ShowDelete = false">
+                            Hủy
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
 @code {
-    private List<ProductItem> items = new();
-    private List<Brand> Brands = new();
-    private string SearchTerm = "";
+    List<Product> products = new();
+    List<Brand> brands = new();
 
-    private bool IsShowModal;
-    private bool IsEdit;
+    Product Editing = new();
+    Product Detail = new();
+    Product? Deleting;
 
-    private ProductItem EditingItem = new();
-    private string EditingProductName = "";
-    private int EditingBrandId;
+    bool ShowForm;
+    bool ShowDelete;
+    bool ShowDetail;
+    bool IsEdit;
 
-    protected override void OnInitialized()
+    string search = "";
+    int brandId = 0;
+    decimal minPrice = 0;
+    decimal maxPrice = 100_000_000;
+
+    int currentPage = 1;
+    int pageSize = 5;   
+
+    protected override async Task OnInitializedAsync()
     {
-        LoadData();
+        products = await ProductService.GetAllAsync();
+        brands = await BrandService.GetAllAsync();
     }
 
-    private void LoadData()
-    {
-        items = Db.ProductItems
-            .Include(i => i.Product)
-            .ThenInclude(p => p.Brand)
-            .OrderByDescending(i => i.Sp_item_id)
+    List<Product> FilteredProducts =>
+        products.Where(p =>
+            (string.IsNullOrWhiteSpace(search)
+                || p.Sp_name.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || Sku(p).Contains(search, StringComparison.OrdinalIgnoreCase)) &&
+            (brandId == 0 || p.Brands_id == brandId) &&
+            p.Price >= minPrice &&
+            p.Price <= maxPrice
+        ).ToList();
+
+    List<Product> PagedProducts =>
+        FilteredProducts
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
             .ToList();
 
-        Brands = Db.Brands.ToList();
-    }
+    int TotalPages =>
+        (int)Math.Ceiling((double)FilteredProducts.Count / pageSize);
 
-    private List<ProductItem> FilteredItems => items
-        .Where(i => string.IsNullOrWhiteSpace(SearchTerm) ||
-                    i.Product!.Sp_name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    (i.SKU != null && i.SKU.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                    (i.Product!.Brand!.Brand_name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)))
-        .ToList();
+    string Sku(Product p) => $"SP-{p.Sp_id:D6}";
 
-    private void OpenAddModal()
+    void OpenAdd()
     {
-        EditingItem = new ProductItem();
-        EditingProductName = "";
-        EditingBrandId = Brands.FirstOrDefault()?.Brand_Id ?? 1;
+        Editing = new Product();
         IsEdit = false;
-        IsShowModal = true;
+        ShowForm = true;
     }
 
-    private void OpenEditModal(ProductItem item)
+    void OpenEdit(Product p)
     {
-        EditingItem = item;
-        EditingProductName = item.Product?.Sp_name ?? "";
-        EditingBrandId = item.Product?.Brands_id ?? 1;
+        ShowDelete = false;
+        ShowDetail = false;
+        Editing = new Product
+        {
+            Sp_id = p.Sp_id,
+            Sp_name = p.Sp_name,
+            Specifications = p.Specifications,
+            Description = p.Description,
+            Price = p.Price,
+            Quantity = p.Quantity,
+            Brands_id = p.Brands_id,
+            ImageUrl = p.ImageUrl
+        };
         IsEdit = true;
-        IsShowModal = true;
+        ShowForm = true;
     }
+    async Task Save()
+{
+    if (IsEdit)
+        await ProductService.UpdateAsync(Editing);
+    else
+        await ProductService.AddAsync(Editing);
 
-    private void SaveProduct()
+    products = await ProductService.GetAllAsync();
+    Detail = new Product();
+    ShowForm = false;
+}
+    async Task ViewDetail(Product p)
+{
+    var fresh = await ProductService.GetByIdAsync(p.Sp_id);
+    if (fresh != null)
     {
-        if (IsEdit)
-        {
-            var product = Db.Products.First(p => p.Sp_id == EditingItem.Sp_id);
-            product.Sp_name = EditingProductName;
-            product.Brands_id = EditingBrandId;
-
-            Db.ProductItems.Update(EditingItem);
-        }
-        else
-        {
-            var product = new Product
-            {
-                Sp_name = EditingProductName,
-                Brands_id = EditingBrandId
-            };
-            Db.Products.Add(product);
-            Db.SaveChanges();
-
-            EditingItem.Sp_id = product.Sp_id;
-            Db.ProductItems.Add(EditingItem);
-        }
-
-        Db.SaveChanges();
-        IsShowModal = false;
-        LoadData();
+        Detail = fresh;
+        ShowDetail = true;
     }
+}
 
-    private void ConfirmDelete(ProductItem item)
+    void ConfirmDelete(Product p)
     {
-        Db.ProductItems.Remove(item);
-        Db.SaveChanges();
-        LoadData();
+        Deleting = p;
+        ShowDelete = true;
+    }
+     async Task Delete()
+    {
+        if (Deleting != null)
+            await ProductService.DeleteAsync(Deleting.Sp_id);
+
+        products = await ProductService.GetAllAsync();
+        Deleting = null;
+        ShowDelete = false;
+        StateHasChanged();
+    }
+    async Task UploadImage(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        var folder = Path.Combine(Env.WebRootPath, "images");
+        Directory.CreateDirectory(folder);
+
+        var path = Path.Combine(folder, file.Name);
+        await using var fs = new FileStream(path, FileMode.Create);
+
+        await file.OpenReadStream(5 * 1024 * 1024)
+                  .CopyToAsync(fs);
+
+        Editing.ImageUrl = "/images/" + file.Name;
     }
 
-    private void CloseModal() => IsShowModal = false;
+    void CloseForm()
+{
+    Editing = new Product();
+    IsEdit = false;
+    ShowForm = false;
+}
 }
