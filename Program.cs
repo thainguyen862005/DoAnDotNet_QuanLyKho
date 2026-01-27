@@ -2,6 +2,8 @@ using QuanLyKho.Components;
 using Microsoft.EntityFrameworkCore;
 using QuanLyKho.Data;
 using QuanLyKho.Services; // Đảm bảo có dòng này để nhận diện IProductService
+using Microsoft.AspNetCore.Components.Authorization;
+using QuanLyKho.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +12,17 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // 2. Cấu hình kết nối SQL Server
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
+builder.Services.AddAuthorizationCore();
+builder.Services.AddCascadingAuthenticationState();
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")),
+    ServiceLifetime.Transient 
+);    
+
+
+// Cấu hình kết nối SQL Server
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Không tìm thấy chuỗi kết nối 'DefaultConnection'.");
 
@@ -38,6 +51,9 @@ app.UseHttpsRedirection();
 
 // Cho phép truy cập các file trong thư mục wwwroot (như ảnh sản phẩm)
 app.UseStaticFiles(); 
+ 
+app.UseStaticFiles();  
+ 
 
 app.UseAntiforgery();
 
