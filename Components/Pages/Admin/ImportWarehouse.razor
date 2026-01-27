@@ -1,115 +1,204 @@
 ﻿@page "/admin/import"
 @layout AdminLayout
-@using QuanLyKho.Components.Layout
-@inject NavigationManager Nav
 @rendermode InteractiveServer
+@using QuanLyKho.Data
+@inject AppDbContext _context
+@inject NavigationManager Nav
 
 <PageTitle>Nhập kho</PageTitle>
 
 <div class="container-fluid">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Nhập Kho (Admin)</h1>
-    </div>
+    <h1 class="h3 mb-4 text-gray-800">Nhập Kho (Admin)</h1>
+
+    @if (successMessage != null)
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+    @if (errorMessage != null)
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
 
     <div class="row">
         <div class="col-lg-8">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Thông tin phiếu nhập</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">Thông tin nhập kho</h6>
                 </div>
+
                 <div class="card-body">
-                    @if (!string.IsNullOrEmpty(errorMessage))
+
+                    <!-- CHỌN HÃNG -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Chọn hãng</label>
+                        <select class="form-control" @onchange="OnBrandChanged">
+                            <option value="">-- Tất cả hãng --</option>
+                            @foreach (var b in brands)
+                            {
+                                <option value="@b">@b</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- CHỌN SẢN PHẨM -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Chọn sản phẩm</label>
+                        <select class="form-control" @onchange="OnProductChanged">
+                            <option value="">-- Chọn sản phẩm --</option>
+                            @foreach (var p in filteredProducts)
+                            {
+                                <option value="@p.Id">@p.Name (@p.SKU)</option>
+                            }
+                        </select>
+                    </div>
+
+                    @if (selectedProduct != null)
                     {
-                        <div class="alert alert-danger">@errorMessage</div>
+                        <div class="border rounded p-3 mb-3 bg-light">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <img src="@selectedProduct.ImageUrl" class="img-fluid rounded" />
+                                </div>
+                                <div class="col-md-8">
+                                    <p><b>Tên:</b> @selectedProduct.Name</p>
+                                    <p><b>SKU:</b> @selectedProduct.SKU</p>
+                                    <p><b>Hãng:</b> @selectedProduct.Brand</p>
+                                    <p><b>Tồn kho hiện tại:</b> @selectedProduct.Stock</p>
+                                </div>
+                            </div>
+                        </div>
                     }
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Mã sản phẩm:</label>
-                        <input class="form-control" @bind="maSanPham" placeholder="Nhập mã sản phẩm..." />
+                        <label class="form-label fw-bold">Số lượng nhập</label>
+                        <input type="number" class="form-control" @bind="soLuongNhap" min="1" />
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Tên sản phẩm:</label>
-                        <input class="form-control" @bind="tenSanPham" placeholder="Nhập tên sản phẩm..." />
+                        <label class="form-label fw-bold">Ghi chú</label>
+                        <textarea class="form-control" rows="3" @bind="ghiChu"></textarea>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Số lượng nhập:</label>
-                            <input type="number" class="form-control" @bind="soLuong" min="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Ngày nhập:</label>
-                            <input type="date" class="form-control" @bind="ngayNhap" />
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Nhà cung cấp:</label>
-                        <input class="form-control" @bind="nhaCungCap" placeholder="Tên nhà cung cấp..." />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Ghi chú:</label>
-                        <textarea class="form-control" rows="3" @bind="ghiChu" placeholder="Ghi chú..."></textarea>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button class="btn btn-secondary" @onclick="HuyBo">Hủy bỏ</button>
-                        <button class="btn btn-success" @onclick="XuLyNhapKho">Xác nhận Nhập</button>
-                    </div>
+                    <button class="btn btn-success" @onclick="NhapKho">Xác nhận nhập kho</button>
                 </div>
             </div>
         </div>
 
+        <!-- TÓM TẮT -->
         <div class="col-lg-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 bg-info text-white">
-                    <h6 class="m-0 font-weight-bold">Tóm tắt</h6>
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h6 class="m-0">Phiếu nhập</h6>
                 </div>
                 <div class="card-body">
-                    <p class="mb-1"><strong>Mã SP:</strong> @maSanPham</p>
-                    <p class="mb-1"><strong>Tên SP:</strong> @tenSanPham</p>
-                    <p class="mb-1"><strong>Số lượng:</strong> @soLuong</p>
-                    <p class="mb-1"><strong>Nhà cung cấp:</strong> @nhaCungCap</p>
+                    @if (selectedProduct != null)
+                    {
+                        <p><b>Sản phẩm:</b> @selectedProduct.Name</p>
+                        <p><b>Hãng:</b> @selectedProduct.Brand</p>
+                        <p><b>Số lượng nhập:</b> @soLuongNhap</p>
+                        <p><b>Tồn kho sau nhập:</b> @(selectedProduct.Stock + soLuongNhap)</p>
+                    }
+
+                    @if (maPhieuNhap != null)
+                    {
+                        <hr />
+                        <p><b>Mã phiếu:</b> @maPhieuNhap</p>
+                        <p><b>Ngày nhập:</b> @ngayNhapKho?.ToString("dd/MM/yyyy HH:mm")</p>
+                    }
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 
 @code {
-    private string? maSanPham;
-    private string? tenSanPham;
-    private int soLuong = 1;
-    private DateTime ngayNhap = DateTime.Now;
-    private string? nhaCungCap;
+    private string? maPhieuNhap;
+    private DateTime? ngayNhapKho;
+    private List<Product> products = new();
+    private List<Product> filteredProducts = new();
+    private List<string> brands = new();
+
+    private string? selectedBrand;
+    private Product? selectedProduct;
+    private int soLuongNhap = 1;
     private string? ghiChu;
     private string? errorMessage;
+    private string? successMessage;
 
-    private void XuLyNhapKho()
+    protected override void OnInitialized()
     {
-        if (string.IsNullOrWhiteSpace(maSanPham) && string.IsNullOrWhiteSpace(tenSanPham))
+        products = _context.Products.ToList();
+        brands = products.Select(p => p.Brand)
+                         .Where(b => !string.IsNullOrWhiteSpace(b))
+                         .Distinct()
+                         .OrderBy(b => b)
+                         .ToList();
+
+        filteredProducts = products;
+    }
+
+    private void OnBrandChanged(ChangeEventArgs e)
+    {
+        selectedBrand = e.Value?.ToString();
+        selectedProduct = null;
+
+        if (string.IsNullOrWhiteSpace(selectedBrand))
+            filteredProducts = products;
+        else
+            filteredProducts = products.Where(p => p.Brand == selectedBrand).ToList();
+    }
+
+    private void OnProductChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id))
         {
-            errorMessage = "Vui lòng nhập Mã hoặc Tên sản phẩm.";
+            selectedProduct = _context.Products.FirstOrDefault(p => p.Id == id);
+        }
+    }
+
+    private async Task NhapKho()
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        if (selectedProduct == null)
+        {
+            errorMessage = "Vui lòng chọn sản phẩm.";
             return;
         }
 
-        if (soLuong <= 0)
+        if (soLuongNhap <= 0)
         {
             errorMessage = "Số lượng phải lớn hơn 0.";
             return;
         }
 
-        // TODO: Thêm logic lưu vào DB hoặc gọi API
+        // Cập nhật tồn kho
+        selectedProduct.Stock += soLuongNhap;
 
-        // Sau khi xử lý, điều hướng về danh sách tồn kho admin
-        Nav.NavigateTo("/admin/inventory");
-    }
+        var log = new InventoryLog
+        {
+            CreatedAt = DateTime.Now,
+            ProductName = selectedProduct.Name,
+            SKU = selectedProduct.SKU,
+            Quantity = soLuongNhap,
+            Type = "Nhập",
+            StaffName = "Admin",
+            Note = ghiChu ?? ""
+        };
 
-    private void HuyBo()
-    {
-        Nav.NavigateTo("/admin/inventory");
+        _context.InventoryLogs.Add(log);
+        await _context.SaveChangesAsync();
+
+        // ✅ TẠO MÃ PHIẾU SAU KHI CÓ ID
+        ngayNhapKho = log.CreatedAt;
+        maPhieuNhap = $"{log.Id}-{ngayNhapKho:ddMMyy}";
+
+        successMessage = "Nhập kho thành công!";
+
+        StateHasChanged();
+
+        
     }
 }
-

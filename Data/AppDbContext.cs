@@ -94,6 +94,9 @@ namespace QuanLyKho.Data
         public decimal Price { get; set; } = 0;
 
         public int Stock { get; set; } = 0;
+
+        [MaxLength(500)]
+        public string ImageUrl { get; set; } = "";   // ✅ THÊM TRƯỜNG ẢNH
     }
 
     [Table("InventoryLogs")]
@@ -101,6 +104,9 @@ namespace QuanLyKho.Data
     {
         [Key]
         public int Id { get; set; }
+
+        [MaxLength(50)]
+        public string ReceiptCode { get; set; } = "";
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 

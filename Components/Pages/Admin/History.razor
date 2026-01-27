@@ -1,9 +1,10 @@
 @page "/admin/history"
-@using QuanLyKho.Components.Layout
 @layout AdminLayout
 @rendermode InteractiveServer
+@using QuanLyKho.Data
+@inject AppDbContext _context
 
-<PageTitle>Admin - Lịch sử nhập / xuất</PageTitle>
+<PageTitle>Lịch sử nhập / xuất kho</PageTitle>
 
 <div class="container-fluid px-4">
 
@@ -12,13 +13,14 @@
         <p class="text-muted">Theo dõi các thao tác kho (Admin)</p>
     </div>
 
+    <!-- BỘ LỌC -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
             <div class="row g-2 align-items-center">
 
                 <div class="col-md-4">
                     <input class="form-control"
-                           placeholder="Tìm theo tên hoặc mã sản phẩm..."
+                           placeholder="Tìm theo mã sản phẩm..."
                            @bind="SearchTerm"
                            @bind:event="oninput" />
                 </div>
@@ -43,30 +45,30 @@
         </div>
     </div>
 
+    <!-- BẢNG LỊCH SỬ -->
     <div class="card border-0 shadow-sm overflow-hidden">
         <table class="table table-hover align-middle mb-0">
             <thead class="bg-light">
                 <tr class="text-uppercase text-secondary small fw-bold">
                     <th class="ps-4">Ngày</th>
-                    <th>Sản phẩm</th>
+                    <th>Mã sản phẩm</th>
                     <th>Loại</th>
                     <th class="text-center">Số lượng</th>
                     <th>Nhân viên</th>
-                    <th class="pe-4">Ghi chú</th>
+                    <th>Phiếu</th>
                 </tr>
             </thead>
             <tbody>
-                @if (FilteredHistories.Any())
+                @if (FilteredLogs.Any())
                 {
-                    @foreach (var h in FilteredHistories)
+                    @foreach (var h in FilteredLogs)
                     {
                         <tr>
                             <td class="ps-4">
                                 @h.CreatedAt.ToString("dd/MM/yyyy HH:mm")
                             </td>
-                            <td>
-                                <div class="fw-bold">@h.ProductName</div>
-                                <small class="text-muted">@h.SKU</small>
+                            <td class="fw-bold">
+                                @h.SKU
                             </td>
                             <td>
                                 <span class="badge rounded-pill px-3 py-2 @GetTypeBadge(h.Type)">
@@ -79,8 +81,11 @@
                                 </span>
                             </td>
                             <td>@h.StaffName</td>
-                            <td class="pe-4 text-muted">
-                                @(string.IsNullOrWhiteSpace(h.Note) ? "-" : h.Note)
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary"
+                                        @onclick="() => XemPhieu(h)">
+                                    @h.ReceiptCode
+                                </button>
                             </td>
                         </tr>
                     }
@@ -97,73 +102,76 @@
         </table>
     </div>
 </div>
+@if (showReceiptModal && selectedLog != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Chi tiết phiếu kho</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="DongModal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            @if (!string.IsNullOrEmpty(receiptImageUrl))
+                            {
+                                <img src="@receiptImageUrl" class="img-fluid rounded shadow-sm" />
+                            }
+                            else
+                            {
+                                <div class="text-muted">Không có ảnh</div>
+                            }
+                        </div>
+
+                        <div class="col-md-8">
+                            <p><b>Mã phiếu:</b> @selectedLog.ReceiptCode</p>
+                            <p><b>Ngày:</b> @selectedLog.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                            <hr />
+                            <p><b>Tên sản phẩm:</b> @receiptProductName</p>
+                            <p><b>Mã sản phẩm:</b> @selectedLog.SKU</p>
+                            <p><b>Loại:</b> @selectedLog.Type</p>
+                            <p><b>Số lượng:</b> @selectedLog.Quantity</p>
+                            <p><b>Nhân viên:</b> @selectedLog.StaffName</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-success" @onclick="DongModal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 
 @code {
-
-    public class InventoryHistory
-    {
-        public DateTime CreatedAt { get; set; }
-        public string ProductName { get; set; } = "";
-        public string SKU { get; set; } = "";
-        public string Type { get; set; } = "";
-        public int Quantity { get; set; }
-        public string StaffName { get; set; } = "";
-        public string Note { get; set; } = "";
-    }
-
     private string SearchTerm = "";
     private string TypeFilter = "";
     private DateTime? FromDate;
     private DateTime? ToDate;
-    private List<InventoryHistory> histories = new()
-    {
-        new InventoryHistory
-        {
-            CreatedAt = DateTime.Now.AddHours(-2),
-            ProductName = "iPhone 17 Pro Max",
-            SKU = "IP17-PM-256",
-            Type = "Nhập",
-            Quantity = 10,
-            StaffName = "Nguyễn Hoàng Thái",
-            Note = "Nhập từ nhà cung cấp"
-        },
-        new InventoryHistory
-        {
-            CreatedAt = DateTime.Now.AddHours(-1),
-            ProductName = "Samsung Galaxy S26 Ultra",
-            SKU = "SS-S26U-512",
-            Type = "Xuất",
-            Quantity = 2,
-            StaffName = "Nguyễn Thanh Phú",
-            Note = "Xuất bán hàng"
-        },
-        new InventoryHistory
-        {
-            CreatedAt = DateTime.Now.AddDays(-1),
-            ProductName = "Google Pixel 10",
-            SKU = "GG-P10-256",
-            Type = "Xuất",
-            Quantity = 1,
-            StaffName = "Nguyễn Minh Luân",
-            Note = "Máy lỗi"
-        }
-    };
+    private bool showReceiptModal = false;
+    private InventoryLog? selectedLog;
+    private string? receiptImageUrl;
+    private string? receiptProductName;
 
-    private List<InventoryHistory> FilteredHistories =>
-       histories
-           .Where(h =>
-               (string.IsNullOrWhiteSpace(SearchTerm)
-                || h.ProductName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
-                || h.SKU.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase))
-               &&
-               (string.IsNullOrWhiteSpace(TypeFilter) || h.Type == TypeFilter)
-               &&
-               (!FromDate.HasValue || h.CreatedAt.Date >= FromDate.Value)
-               &&
-               (!ToDate.HasValue || h.CreatedAt.Date <= ToDate.Value)
-           )
-           .OrderByDescending(h => h.CreatedAt)
-           .ToList();
+
+
+    private List<InventoryLog> logs = new();
+
+    protected override void OnInitialized()
+    {
+        logs = _context.InventoryLogs.OrderByDescending(x => x.CreatedAt).ToList();
+    }
+
+    private IEnumerable<InventoryLog> FilteredLogs =>
+        logs.Where(h =>
+            (string.IsNullOrWhiteSpace(SearchTerm) || h.SKU.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrWhiteSpace(TypeFilter) || h.Type == TypeFilter) &&
+            (!FromDate.HasValue || h.CreatedAt.Date >= FromDate.Value) &&
+            (!ToDate.HasValue || h.CreatedAt.Date <= ToDate.Value)
+        );
 
     private string GetTypeBadge(string type) => type switch
     {
@@ -171,4 +179,32 @@
         "Xuất" => "bg-danger-subtle text-danger",
         _ => "bg-secondary text-white"
     };
+
+    private void XemPhieu(InventoryLog log)
+    {
+        selectedLog = log;
+
+        var product = _context.Products.FirstOrDefault(p => p.SKU == log.SKU);
+        if (product != null)
+        {
+            receiptImageUrl = product.ImageUrl;
+            receiptProductName = product.Name;
+        }
+        else
+        {
+            receiptImageUrl = null;
+            receiptProductName = "Không tìm thấy sản phẩm";
+        }
+
+        showReceiptModal = true;
+    }
+
+
+    private void DongModal()
+    {
+        showReceiptModal = false;
+        selectedLog = null;
+        receiptImageUrl = null;
+        receiptProductName = null;
+    }
 }
