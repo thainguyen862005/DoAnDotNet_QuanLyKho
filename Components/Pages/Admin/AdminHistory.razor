@@ -1,0 +1,89 @@
+﻿@page "/admin/history"
+@layout Components.Layout.AdminLayout
+@using QuanLyKho.Data
+@rendermode InteractiveServer
+@inject AppDbContext Db
+
+<PageTitle>Lịch sử kho</PageTitle>
+
+<div class="container-fluid">
+    <h2 class="h3 mb-4 text-gray-800">Lịch sử Nhập / Xuất Kho</h2>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Dữ liệu log hệ thống</h6>
+            <div class="d-flex gap-2">
+                <input class="form-control form-control-sm" placeholder="Tìm kiếm tên SP, SKU..." style="width: 200px;" @bind="SearchTerm" @bind:event="oninput" />
+                <select class="form-select form-select-sm" style="width: 150px;" @bind="TypeFilter">
+                    <option value="">-- Tất cả --</option>
+                    <option value="Nhập">Nhập kho</option>
+                    <option value="Xuất">Xuất kho</option>
+                </select>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Loại</th>
+                            <th>Sản phẩm</th>
+                            <th>SKU</th>
+                            <th class="text-center">Số lượng</th>
+                            <th>Người thực hiện</th>
+                            <th>Ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in FilteredLogs)
+                        {
+                            <tr>
+                                <td>@log.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    <span class="badge @(log.Type == "Nhập" ? "bg-primary" : "bg-danger")">
+                                        @log.Type
+                                    </span>
+                                </td>
+                                <td class="fw-bold">@log.ProductName</td>
+                                <td class="text-muted small">@log.SKU</td>
+                                <td class="text-center fw-bold">@log.Quantity</td>
+                                <td>
+                                    <span class="badge bg-secondary">@log.StaffName</span>
+                                </td>
+                                <td class="text-muted small">@log.Note</td>
+                            </tr>
+                        }
+                        @if (!FilteredLogs.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">Không tìm thấy dữ liệu nào.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string SearchTerm = "";
+    private string TypeFilter = "";
+    private List<InventoryLog> logs = new();
+
+    protected override void OnInitialized()
+    {
+        // Load logs từ Database, sắp xếp mới nhất lên đầu
+        logs = Db.InventoryLogs.OrderByDescending(x => x.CreatedAt).ToList();
+    }
+
+    // Logic lọc tìm kiếm
+    private List<InventoryLog> FilteredLogs => logs
+        .Where(l => (string.IsNullOrEmpty(SearchTerm) ||
+                     l.ProductName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                     l.StaffName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                     l.SKU.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)) &&
+                    (string.IsNullOrEmpty(TypeFilter) || l.Type == TypeFilter))
+        .ToList();
+}

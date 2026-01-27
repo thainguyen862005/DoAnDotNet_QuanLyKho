@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace QuanLyKho.Migrations
 {
     /// <inheritdoc />
-    public partial class RebuildDb : Migration
+    public partial class RebuildAuth : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

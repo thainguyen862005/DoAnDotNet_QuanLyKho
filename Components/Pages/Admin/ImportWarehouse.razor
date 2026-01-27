@@ -52,12 +52,27 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Nhà cung cấp / Nguồn:</label>
-                        <input class="form-control" @bind="nhaCungCap" placeholder="Nhập từ..." />
+                        <div class="input-group">
+                            <select class="form-select" @bind="nhaCungCap">
+                                <option value="">-- Chọn nhà cung cấp --</option>
+                                @foreach (var sup in suppliers)
+                                {
+                                    <option value="@sup.Name">@sup.Name</option>
+                                }
+                            </select>
+                            <button class="btn btn-outline-secondary" type="button" @onclick='() => Nav.NavigateTo("/admin/suppliers")'>
+                                <i class="bi bi-plus-lg"></i> Thêm NCC
+                            </button>
+                        </div>
+                        @if (!suppliers.Any())
+                        {
+                            <small class="text-danger">Chưa có nhà cung cấp nào. Vui lòng thêm mới!</small>
+                        }
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Ghi chú:</label>
-                        <textarea class="form-control" rows="3" @bind="ghiChu" placeholder="Ghi chú..."></textarea>
+                        <textarea class="form-control" rows="3" @bind="ghiChu" placeholder="Ghi chú thêm..."></textarea>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
@@ -77,7 +92,7 @@
                     <p class="mb-1"><strong>Mã SKU:</strong> @(string.IsNullOrEmpty(maSanPham) ? "-" : maSanPham)</p>
                     <p class="mb-1"><strong>Tên SP:</strong> @(string.IsNullOrEmpty(tenSanPham) ? "-" : tenSanPham)</p>
                     <p class="mb-1"><strong>Số lượng:</strong> <span class="text-success fw-bold">+@soLuong</span></p>
-                    <p class="mb-1"><strong>Nguồn:</strong> @nhaCungCap</p>
+                    <p class="mb-1"><strong>Nguồn:</strong> @(string.IsNullOrEmpty(nhaCungCap) ? "Chưa chọn" : nhaCungCap)</p>
                     <hr />
                     <small class="text-muted">Lưu ý: Sau khi xác nhận, số lượng tồn kho của sản phẩm sẽ tăng lên tương ứng.</small>
                 </div>
@@ -96,6 +111,24 @@
     private string? errorMessage;
     private string? successMessage;
 
+    // Danh sách nhà cung cấp để đổ vào Dropdown
+    private List<Supplier> suppliers = new();
+
+    protected override void OnInitialized()
+    {
+        // Load danh sách nhà cung cấp từ DB
+        // Nếu bạn chưa chạy lệnh Update-Database sau khi thêm bảng Supplier, đoạn này sẽ lỗi
+        try
+        {
+            suppliers = Db.Suppliers.ToList();
+        }
+        catch
+        {
+            // Bỏ qua lỗi nếu chưa tạo bảng, để tránh crash trang
+            suppliers = new List<Supplier>();
+        }
+    }
+
     private void XuLyNhapKho()
     {
         errorMessage = null;
@@ -113,8 +146,13 @@
             return;
         }
 
-        Product? product = null;
+        if (string.IsNullOrEmpty(nhaCungCap))
+        {
+            errorMessage = "Vui lòng chọn Nhà cung cấp.";
+            return;
+        }
 
+        Product? product = null;
         if (!string.IsNullOrWhiteSpace(maSanPham))
         {
             product = Db.Products.FirstOrDefault(p => p.SKU == maSanPham);
@@ -146,11 +184,15 @@
 
         Db.InventoryLogs.Add(log);
         Db.SaveChanges();
+
         successMessage = $"Đã nhập thành công {soLuong} chiếc cho sản phẩm: {product.Name}. Tồn kho mới: {product.Stock}";
+
+        // Reset form
         maSanPham = "";
         tenSanPham = "";
         soLuong = 1;
         ghiChu = "";
+        // Không reset nhaCungCap để nhập tiếp cho tiện
     }
 
     private void HuyBo()

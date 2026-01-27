@@ -14,7 +14,7 @@ namespace QuanLyKho.Data
         public DbSet<Product> Products { get; set; }
         public DbSet<InventoryLog> InventoryLogs { get; set; }
         public DbSet<Order> Orders { get; set; }
-
+        public DbSet<Supplier> Suppliers { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<User>().HasData(
@@ -38,6 +38,12 @@ namespace QuanLyKho.Data
                     Status = "Active",
                     CreatedAt = new DateTime(2024, 1, 1)
                 }
+            );
+
+            modelBuilder.Entity<Supplier>().HasData(
+                new Supplier { Id = 1, Name = "FPT Trading", Phone = "0901234567", Address = "Hà Nội" },
+                new Supplier { Id = 2, Name = "Viettel Distribution", Phone = "0987654321", Address = "TP.HCM" },
+                new Supplier { Id = 3, Name = "Digiworld", Phone = "0999888777", Address = "Đà Nẵng" }
             );
         }
     }
@@ -147,5 +153,21 @@ namespace QuanLyKho.Data
         public decimal UnitPrice { get; set; }
 
         public decimal TotalAmount { get; set; }
+    }
+    [Table("Suppliers")]
+    public class Supplier
+    {
+        [Key]
+        public int Id { get; set; }
+
+        [Required]
+        [MaxLength(200)]
+        public string Name { get; set; } = "";
+
+        [MaxLength(20)]
+        public string Phone { get; set; } = "";
+
+        [MaxLength(500)]
+        public string Address { get; set; } = "";
     }
 }

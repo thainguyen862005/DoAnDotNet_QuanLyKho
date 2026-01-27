@@ -12,8 +12,8 @@ using QuanLyKho.Data;
 namespace QuanLyKho.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260127054238_RebuildDb")]
-    partial class RebuildDb
+    [Migration("20260127072826_RebuildAuth")]
+    partial class RebuildAuth
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

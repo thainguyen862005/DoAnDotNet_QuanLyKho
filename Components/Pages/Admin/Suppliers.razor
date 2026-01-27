@@ -1,0 +1,139 @@
+﻿@page "/admin/suppliers"
+@layout Components.Layout.AdminLayout
+@using QuanLyKho.Data
+@rendermode InteractiveServer
+@inject AppDbContext Db
+
+<PageTitle>Quản lý Nhà cung cấp</PageTitle>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-4">
+        <h2 class="h3 mb-0 text-gray-800">Nhà Cung Cấp</h2>
+        <button class="btn btn-primary fw-bold" @onclick="OpenAddModal">
+            <i class="bi bi-plus-circle"></i> Thêm mới
+        </button>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Tên Nhà Cung Cấp</th>
+                            <th>Số điện thoại</th>
+                            <th>Địa chỉ</th>
+                            <th class="text-end">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in suppliers)
+                        {
+                            <tr>
+                                <td class="fw-bold">@item.Name</td>
+                                <td>@item.Phone</td>
+                                <td>@item.Address</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-info text-white me-2" @onclick="() => OpenEditModal(item)">Sửa</button>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteSupplier(item)">Xóa</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (IsShowModal)
+{
+    <div class="modal fade show d-block" style="background:rgba(0,0,0,.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(EditingSupplier.Id == 0 ? "Thêm mới" : "Cập nhật")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Tên Nhà cung cấp</label>
+                        <input class="form-control" @bind="EditingSupplier.Name" />
+                    </div>
+                    <div class="mb-3">
+                        <label>Số điện thoại</label>
+                        <input class="form-control" @bind="EditingSupplier.Phone" />
+                    </div>
+                    <div class="mb-3">
+                        <label>Địa chỉ</label>
+                        <input class="form-control" @bind="EditingSupplier.Address" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModal">Hủy</button>
+                    <button class="btn btn-primary" @onclick="SaveSupplier">Lưu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Supplier> suppliers = new();
+    private Supplier EditingSupplier = new();
+    private bool IsShowModal = false;
+
+    protected override void OnInitialized()
+    {
+        LoadData();
+    }
+
+    void LoadData()
+    {
+        suppliers = Db.Suppliers.OrderByDescending(s => s.Id).ToList();
+    }
+
+    void OpenAddModal()
+    {
+        EditingSupplier = new Supplier();
+        IsShowModal = true;
+    }
+
+    void OpenEditModal(Supplier item)
+    {
+        EditingSupplier = new Supplier { Id = item.Id, Name = item.Name, Phone = item.Phone, Address = item.Address };
+        IsShowModal = true;
+    }
+
+    void CloseModal() => IsShowModal = false;
+
+    void SaveSupplier()
+    {
+        if (string.IsNullOrWhiteSpace(EditingSupplier.Name)) return;
+
+        if (EditingSupplier.Id == 0)
+        {
+            Db.Suppliers.Add(EditingSupplier);
+        }
+        else
+        {
+            var dbItem = Db.Suppliers.FirstOrDefault(x => x.Id == EditingSupplier.Id);
+            if (dbItem != null)
+            {
+                dbItem.Name = EditingSupplier.Name;
+                dbItem.Phone = EditingSupplier.Phone;
+                dbItem.Address = EditingSupplier.Address;
+            }
+        }
+        Db.SaveChanges();
+        IsShowModal = false;
+        LoadData();
+    }
+
+    void DeleteSupplier(Supplier item)
+    {
+        Db.Suppliers.Remove(item);
+        Db.SaveChanges();
+        LoadData();
+    }
+}
