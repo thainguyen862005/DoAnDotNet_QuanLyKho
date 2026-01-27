@@ -4,6 +4,8 @@
 @using QuanLyKho.Components.Layout
 @inject NavigationManager Nav
 @rendermode InteractiveServer
+@using QuanLyKho.Data
+@inject AppDbContext Db
 
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
@@ -193,38 +195,29 @@
 }
 
 @code {
-    public class User
-    {
-        public int Id { get; set; }
-        public string Username { get; set; } = "";
-        public string Email { get; set; } = "";
-        public string PasswordHash { get; set; } = "";
-        public string Phone { get; set; } = "";
-        public int Role { get; set; }
-        public string Status { get; set; } = "Active";
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-    }
-
     private string SearchTerm = "";
     private bool IsShowModal;
     private bool ShowDeleteConfirm;
-    private User EditingUser = new();
+
+    private User EditingUser = new User { Role = 0, Status = "Active" };
     private User? DeletingUser;
 
-    private List<User> users = new List<User>
+    private List<User> users = new();
+
+    protected override void OnInitialized()
     {
-        new User { Id = 101, Username = "admin_main", Email = "admin@gmail.com", Phone = "0909123456", Role = 1, Status = "Active", CreatedAt = new DateTime(2025, 1, 10, 8, 30, 0) },
-        new User { Id = 102, Username = "nguyenvana", Email = "vana@gmail.com", Phone = "0912345678", Role = 0, Status = "Active", CreatedAt = new DateTime(2025, 2, 15, 14, 20, 0) },
-        new User { Id = 103, Username = "tranthib", Email = "btran@yahoo.com", Phone = "0987654321", Role = 0, Status = "Locked", CreatedAt = new DateTime(2025, 3, 01, 9, 00, 0) },
-        new User { Id = 104, Username = "manager_kho", Email = "kho@company.com", Phone = "0933445566", Role = 1, Status = "Active", CreatedAt = new DateTime(2025, 5, 20, 11, 45, 0) },
-        new User { Id = 105, Username = "guest_user", Email = "guest@test.com", Phone = "0977889900", Role = 0, Status = "Active", CreatedAt = new DateTime(2026, 1, 24, 10, 10, 0) }
-    };
+        LoadData();
+    }
+
+    private void LoadData()
+    {
+        users = Db.Users.OrderByDescending(u => u.Id).ToList();
+    }
 
     private List<User> FilteredUsers => users
         .Where(u => string.IsNullOrWhiteSpace(SearchTerm) || 
                     u.Username.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) || 
                     u.Email.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase))
-        .OrderByDescending(u => u.Id)
         .ToList();
 
     private void OpenCreateModal()
@@ -250,26 +243,31 @@
 
     private void SaveUser()
     {
-        if (EditingUser.Id == 0)
+        if (EditingUser.Id == 0) 
         {
-            var newId = users.Any() ? users.Max(u => u.Id) + 1 : 1;
-            EditingUser.Id = newId;
             EditingUser.CreatedAt = DateTime.Now;
-            users.Insert(0, EditingUser);
+            
+            if (string.IsNullOrEmpty(EditingUser.Password)) 
+                EditingUser.Password = "123"; 
+
+            Db.Users.Add(EditingUser);
         }
-        else
+        else 
         {
-            var u = users.FirstOrDefault(x => x.Id == EditingUser.Id);
-            if (u != null)
+            var userInDb = Db.Users.Find(EditingUser.Id);
+            if (userInDb != null)
             {
-                u.Username = EditingUser.Username;
-                u.Email = EditingUser.Email;
-                u.Phone = EditingUser.Phone;
-                u.Role = EditingUser.Role;
-                u.Status = EditingUser.Status;
+                userInDb.Username = EditingUser.Username;
+                userInDb.Email = EditingUser.Email;
+                userInDb.Phone = EditingUser.Phone;
+                userInDb.Role = EditingUser.Role;
+                userInDb.Status = EditingUser.Status;
             }
         }
+
+        Db.SaveChanges(); 
         IsShowModal = false;
+        LoadData(); 
     }
 
     private void ConfirmDelete(User u)
@@ -280,8 +278,17 @@
 
     private void DeleteUser()
     {
-        if (DeletingUser != null) users.Remove(DeletingUser);
+        if (DeletingUser != null)
+        {
+            var userInDb = Db.Users.Find(DeletingUser.Id);
+            if (userInDb != null)
+            {
+                Db.Users.Remove(userInDb);
+                Db.SaveChanges();
+            }
+        }
         ShowDeleteConfirm = false;
+        LoadData(); 
     }
 
     private void CloseModal() => IsShowModal = false;
