@@ -1,7 +1,7 @@
 using QuanLyKho.Components;
 using Microsoft.EntityFrameworkCore;
 using QuanLyKho.Data;
-using QuanLyKho.Service; // Đảm bảo có dòng này để nhận diện IProductService
+using QuanLyKho.Services; // Đảm bảo có dòng này để nhận diện IProductService
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +19,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // 3. ĐĂNG KÝ SERVICES (Quan trọng nhất - Thiếu cái này trang Product sẽ lỗi)
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IBrandService, BrandService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 // 4. Đăng ký IWebHostEnvironment (Nếu cần dùng cho Upload ảnh)
 // Lưu ý: IWebHostEnvironment đã được builder mặc định đăng ký sẵn
