@@ -1,4 +1,4 @@
-@page "/admin/sales"
+@page "/admin/sales-admin"
 @layout AdminLayout
 @using QuanLyKho.Components.Layout
 @inject NavigationManager Nav
@@ -153,54 +153,6 @@
             </div>
         </div>
     }
-
-    <div class="card shadow mb-4 mt-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-gray-800">Lịch sử thanh toán</h6>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Ngày mua</th>
-                            <th>Tên sản phẩm</th>
-                            <th>Hãng</th>
-                            <th>Số lượng</th>
-                            <th>Giá bán</th>
-                            <th>Thành tiền</th>
-                            <th>Người mua</th>
-                            <th>NV Bán</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (lichSuGiaoDich.Count == 0)
-                        {
-                            <tr>
-                                <td colspan="8" class="text-center text-muted">Chưa có giao dịch nào.</td>
-                            </tr>
-                        }
-                        else
-                        {
-                            @foreach (var ls in lichSuGiaoDich)
-                            {
-                                <tr>
-                                    <td>@ls.NgayMua.ToString("dd/MM/yyyy")</td>
-                                    <td>@ls.TenSanPham</td>
-                                    <td>@ls.Hang</td>
-                                    <td class="text-center">@ls.SoLuong</td>
-                                    <td class="text-end">@ls.DonGia.ToString("N0")</td>
-                                    <td class="text-end fw-bold">@ls.ThanhTien.ToString("N0")</td>
-                                    <td>@ls.NguoiNhan</td>
-                                    <td>@ls.NhanVienBan</td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
 </div>
 
 @code {
@@ -210,10 +162,9 @@
         public string TenSanPham { get; set; } = "";
         public string Hang { get; set; } = "";
         public decimal Gia { get; set; }
-        public int TonKho { get; set; } // Thêm thuộc tính Tồn kho
+        public int TonKho { get; set; }
     }
 
-    // Dữ liệu lấy từ hình ảnh
     private List<ProductInfo> mockProducts = new List<ProductInfo>
     {
         new ProductInfo { Id=1, TenSanPham="iPhone 17 Pro Max (256GB)", Hang="Apple", Gia=32990000, TonKho=15 },
@@ -279,7 +230,6 @@
             return;
         }
         
-        // Logic kiểm tra tồn kho theo ảnh
         if (selectedProduct.TonKho <= 0)
         {
              errorMessage = "Sản phẩm này đã hết hàng.";
@@ -315,7 +265,6 @@
             NhanVienBan = nhanVienBan
         });
 
-        // Tạm thời trừ tồn kho ảo (chỉ trên UI hiện tại) để tránh mua quá số lượng liên tiếp
         selectedProduct.TonKho -= soLuong;
 
         selectedProduct = null;
