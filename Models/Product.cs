@@ -3,18 +3,18 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuanLyKho.Models
 {
-    [Table("Sp")]
+    [Table("Products")]
     public class Product
     {
         [Key]
-        [Column("Sp_id")]
-        public int Sp_id { get; set; }
+        [Column("Product_id")]
+        public int Product_id { get; set; }
 
         [Column("Brands_id")]
         public int? Brands_id { get; set; }
 
-        [Column("Sp_name")]
-        public string Sp_name { get; set; } = "";
+        [Column("Product_name")]
+        public string Product_name { get; set; } = "";
 
         [Column("Specifications")]
         public string? Specifications { get; set; }
