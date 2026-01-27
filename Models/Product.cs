@@ -22,6 +22,9 @@ namespace QuanLyKho.Models
         [Column("Description")]
         public string? Description { get; set; }
 
+        [Column("ImageUrl")]
+        public string? ImageUrl { get; set; }
+
         // Navigation
         [ForeignKey(nameof(Brands_id))]
         public Brand? Brand { get; set; }

@@ -25,6 +25,12 @@ namespace QuanLyKho.Models
         [Column("Note")]
         public string? Note { get; set; }
 
+        [ForeignKey("UserID")]
+        public User? User { get; set; }
+
+        [ForeignKey("SupplierID")]
+        public Supplier? Supplier { get; set; }
+
         public ICollection<TransactionDetail>? Details { get; set; }
     }
 }
