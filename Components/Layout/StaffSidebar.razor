@@ -28,61 +28,73 @@
 </nav>
 <style>
     /* SIDEBAR */
-.sidebar {
-    width: 240px;
-    background-color: #212529;
-}
-#staff-header {
-    color: #fff;
-}
+    .sidebar {
+        width: 240px;
+        background-color: #212529;
+        
+        /* CỐ ĐỊNH CHIỀU CAO VÀ VỊ TRÍ */
+        height: 100vh;      /* Chiều cao bằng đúng màn hình trình duyệt */
+        position: sticky;   /* Dính chặt sidebar vào khung hình */
+        top: 0;             /* Dính sát mép trên */
+        overflow-y: hidden; /* Ẩn thanh cuộn của chính sidebar (chỉ cuộn phần menu link) */
+    }
 
-/* LINK */
-.sidebar-link {
-    color: #dee2e6;
-    border-radius: 6px;
-    margin-bottom: 6px;
-    padding: 10px 12px;
-    transition: all 0.2s ease;
-}
+    #staff-header {
+        color: #fff;
+    }
 
-.sidebar-link:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-    color: #fff;
-}
+    /* LINK */
+    .sidebar-link {
+        color: #dee2e6;
+        border-radius: 6px;
+        margin-bottom: 6px;
+        padding: 10px 12px;
+        transition: all 0.2s ease;
+    }
 
-.sidebar-link.active {
-    background-color: #0d6efd;
-    color: #fff;
-    font-weight: 500;
-}
+    .sidebar-link:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+        color: #fff;
+    }
 
-/* LOGOUT */
-.logout-btn {
-    display: block;
-    width: 100%;
-    padding: 12px;
-    text-align: center;
-    border-radius: 8px;
-    color: #dc3545;
-    border: 1px solid #dc3545;
-    text-decoration: none;
-    transition: all 0.2s ease;
-}
+    .sidebar-link.active {
+        background-color: #0d6efd;
+        color: #fff;
+        font-weight: 500;
+    }
 
-.logout-btn:hover {
-    background-color: #dc3545;
-    color: #fff;
-}
+    /* TÙY CHỈNH THANH CUỘN CHO MENU (Optional) */
+    /* Giúp thanh cuộn bên trong menu nhỏ gọn, thẩm mỹ hơn */
+    .overflow-y-auto::-webkit-scrollbar {
+        width: 5px;
+    }
+    .overflow-y-auto::-webkit-scrollbar-track {
+        background: transparent; 
+    }
+    .overflow-y-auto::-webkit-scrollbar-thumb {
+        background: #888; 
+        border-radius: 5px;
+    }
+    .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+        background: #555; 
+    }
 
-/* HEADER */
-.staff-header {
-    background-color: #fff;
-}
+    /* LOGOUT */
+    .logout-btn {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        text-align: center;
+        border-radius: 8px;
+        color: #dc3545;
+        border: 1px solid #dc3545;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        background-color: transparent; /* Đảm bảo nền trong suốt mặc định */
+    }
 
-.avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-}
-
+    .logout-btn:hover {
+        background-color: #dc3545;
+        color: #fff;
+    }
 </style>

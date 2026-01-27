@@ -1,0 +1,135 @@
+/* 1. Thiết lập chung */
+.login-container {
+    background-color: #f8f9fa;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* 2. Thẻ Card: Bố cục dọc, thon gọn giống ảnh mẫu */
+.login-card {
+    background: #fff;
+    width: 100%;
+    max-width: 420px;
+    padding: 60px 45px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+
+.welcome-text {
+    font-size: 30px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 35px;
+}
+
+/* 3. Logo Box: Hình chữ nhật nền tối */
+.logo-box {
+    background-color: #333;
+    color: #fff;
+    width: 220px;
+    height: 60px;
+    line-height: 60px;
+    font-size: 32px;
+    font-weight: bold;
+    border-radius: 8px;
+    margin: 0 auto 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo-box span {
+    color: #4e84ff; /* Màu xanh của Warehouse */
+    font-size: 22px;
+    font-weight: 600;
+    margin-left: 4px;
+}
+
+/* 4. Định dạng nhóm nhập liệu */
+.input-group {
+    text-align: left;
+    margin-bottom: 30px;
+    position: relative; /* Gốc cho hiệu ứng underline */
+}
+
+.input-group label {
+    font-size: 14px;
+    color: #b0b0b0;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.input-group input {
+    width: 100%;
+    border: none;
+    outline: none;
+    padding: 10px 0;
+    font-size: 16px;
+    color: #444;
+    background: transparent;
+    border-bottom: 1px solid #eeeeee; /* Đường kẻ nền */
+}
+
+/* 5. HIỆU ỨNG UNDERLINE CHẠY TỪ TRÁI SANG PHẢI */
+.underline {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, #00d2ff, #9d50bb);
+    
+    /* Ban đầu thu nhỏ về bên trái */
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease-in-out;
+}
+
+/* Kích hoạt khi input được nhấn vào (Focus) */
+.input-group input:focus + .underline {
+    transform: scaleX(1);
+}
+
+/* 6. Nút LOGIN: Gradient và bo tròn */
+.login-button {
+    width: 100%;
+    height: 52px;
+    border: none;
+    border-radius: 26px;
+    background: linear-gradient(to right, #24c6dc, #514a9d);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    margin-top: 20px;
+    box-shadow: 0 8px 15px rgba(81, 74, 157, 0.25);
+    transition: all 0.3s ease;
+}
+
+.login-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 20px rgba(81, 74, 157, 0.35);
+    opacity: 0.95;
+}
+
+/* 7. Footer text */
+.footer-text {
+    margin-top: 55px;
+    font-size: 13px;
+    color: #999;
+}
+
+.footer-text a {
+    color: #333;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.footer-text a:hover {
+    text-decoration: underline;
+}

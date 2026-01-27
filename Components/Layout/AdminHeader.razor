@@ -1,20 +1,25 @@
 @inject NavigationManager Navigation
 
-<header class="bg-white border-bottom px-4 py-2 d-flex justify-content-between align-items-center">
+<header class="bg-white border-bottom px-4 py-2 d-flex justify-content-between align-items-center sticky-top top-0 z-3 shadow-sm">
 
     <h5 class="mb-0">Hệ thống quản lý kho</h5>
 
     <div class="dropdown">
-        <div class="d-flex align-items-center gap-2">
-                <img src="https://cdn-icons-png.flaticon.com/512/9131/9131529.png" 
-     alt="Avatar" 
-     class="rounded-circle border" 
-     width="40" 
-     height="40" />
-                <span>Admin</span>
-            </div>
+        <div class="d-flex align-items-center gap-2" 
+             style="cursor: pointer"
+             data-bs-toggle="dropdown" 
+             aria-expanded="false">
+             
+            <img src="https://cdn-icons-png.flaticon.com/512/9131/9131529.png" 
+                 alt="Avatar" 
+                 class="rounded-circle border" 
+                 width="40" 
+                 height="40" />
+            
+            <span class="fw-bold">Admin</span>
+        </div>
 
-        <ul class="dropdown-menu dropdown-menu-end">
+        <ul class="dropdown-menu dropdown-menu-end shadow mt-2">
             <li>
                 <span class="dropdown-item-text text-muted">
                     Role: Admin
@@ -24,13 +29,19 @@
                 <hr class="dropdown-divider">
             </li>
             <li>
-                <button class="dropdown-item text-danger">
+                <button class="dropdown-item text-danger" @onclick="Logout">
                     🚪 Đăng xuất
-                    
                 </button>
-                
             </li>
         </ul>
     </div>
 
 </header>
+
+@code {
+    private void Logout()
+    {
+        // Chuyển hướng và forceLoad để reset trạng thái
+        Navigation.NavigateTo("/login", true);
+    }
+}
