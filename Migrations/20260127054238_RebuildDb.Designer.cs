@@ -12,8 +12,8 @@ using QuanLyKho.Data;
 namespace QuanLyKho.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260126185534_CreateDatabaseSchema")]
-    partial class CreateDatabaseSchema
+    [Migration("20260127054238_RebuildDb")]
+    partial class RebuildDb
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -150,10 +150,7 @@ namespace QuanLyKho.Migrations
             modelBuilder.Entity("QuanLyKho.Data.User", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -194,7 +191,7 @@ namespace QuanLyKho.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 1, 27, 1, 55, 31, 937, DateTimeKind.Local).AddTicks(9976),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Email = "admin@gmail.com",
                             Password = "123",
                             Phone = "",
@@ -205,7 +202,7 @@ namespace QuanLyKho.Migrations
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 1, 27, 1, 55, 31, 938, DateTimeKind.Local).AddTicks(669),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Email = "staff@gmail.com",
                             Password = "123",
                             Phone = "",

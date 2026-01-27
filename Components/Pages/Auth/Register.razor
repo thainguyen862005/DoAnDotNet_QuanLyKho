@@ -75,8 +75,6 @@
     {
         errorMessage = "";
         successMessage = "";
-
-        // 1. Kiểm tra nhập liệu
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
             errorMessage = "Vui lòng điền đầy đủ thông tin.";
@@ -88,18 +86,24 @@
             errorMessage = "Mật khẩu xác nhận không khớp.";
             return;
         }
-
-        // 2. Kiểm tra trùng lặp trong Database
         var existingUser = Db.Users.FirstOrDefault(u => u.Email == email || u.Username == username);
         if (existingUser != null)
         {
             errorMessage = "Email hoặc Tên đăng nhập này đã tồn tại.";
             return;
         }
+        int nextId = 1;
+        if (Db.Users.Any())
+        {
+            // Lấy ID lớn nhất hiện tại + 1
+            nextId = Db.Users.Max(u => u.Id) + 1;
+        }
+        // ---------------------------------
 
-        // 3. Tạo user mới (Mặc định Role 0 - Nhân viên)
+        // 3. Tạo user mới với ID vừa tính
         var newUser = new User
         {
+            Id = nextId, // Gán ID thủ công
             Username = username,
             Email = email,
             Password = password,
@@ -111,18 +115,19 @@
         try
         {
             Db.Users.Add(newUser);
-            await Db.SaveChangesAsync(); // Lưu vào SQL Server
+            await Db.SaveChangesAsync();
 
-            // 4. CHUYỂN HƯỚNG VỀ LOGIN
-            successMessage = "Đăng ký thành công! Đang chuyển về trang đăng nhập...";
-            StateHasChanged(); // Cập nhật giao diện để hiện thông báo xanh
+            successMessage = $"Đăng ký thành công.";
+            StateHasChanged();
 
-            await Task.Delay(1500); // Đợi 1.5 giây cho người dùng đọc
-            Nav.NavigateTo("/login"); // Chuyển trang
+            await Task.Delay(1500);
+            Nav.NavigateTo("/login");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            errorMessage = "Lỗi hệ thống. Vui lòng thử lại sau.";
+            // In lỗi ra console để debug nếu cần
+            Console.WriteLine(ex.Message);
+            errorMessage = "Lỗi hệ thống hoặc Database chưa cập nhật (Hãy chạy Migration).";
         }
     }
 }
