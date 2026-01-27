@@ -1,64 +1,87 @@
 @page "/login"
 @layout MainLayout
 @rendermode InteractiveServer
+
+@using QuanLyKho.Data
+@using QuanLyKho.Services
+
 @inject NavigationManager Nav
+@inject AppDbContext Db
+@inject UserSession Session
 
 <div class="login-container">
     <div class="login-card">
-        <h1 class="welcome-text">Welcome</h1>
-        
+        <h1 class="welcome-text">Chào mừng trở lại</h1>
+
         <div class="logo-box">T<span>-Warehouse</span></div>
 
-        <form @onsubmit="HandleLogin" @onsubmit:preventDefault="true">
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-danger text-center p-2 mb-3" style="font-size: 14px;">
+                @error
+            </div>
+        }
+
+        <form @onsubmit="HandleLogin">
             <div class="input-group">
                 <label>Email</label>
-                <input type="email" @bind="email" placeholder="nguyenvana@example.com" required>
+                <input type="text" @bind="email" placeholder="Nhập email..." required>
                 <div class="underline"></div>
             </div>
 
             <div class="input-group">
-                <label>Password</label>
-                 
-                    <input type="password" @bind="password" placeholder="Password" required>
-                    
-                    <div class="underline"></div> 
-                
+                <label>Mật khẩu</label>
+                <input type="password" @bind="password" placeholder="Nhập mật khẩu..." required>
+                <div class="underline"></div>
             </div>
 
-           <button type="submit" class="login-button" @onclick="HandleLogin">Login</button>
+            <button type="submit" class="login-button">Đăng nhập</button>
         </form>
 
-        <p class="footer-text">
-            Don't have an account? <a href="#">Sign Up</a>
+        <div class="text-center mt-3">
+            <span>Chưa có tài khoản? </span>
+            <a href="/register" class="text-decoration-none fw-bold text-primary">Đăng ký ngay</a>
+        </div>
+        <p class="footer-text mt-3">
+            Quên mật khẩu? <a href="#">Liên hệ Admin</a>
         </p>
+
     </div>
 </div>
 
-
 @code {
-    string email = "";  
+    string email = "";
     string password = "";
     string error = "";
-    bool showPassword = false;
-
-    void TogglePassword() => showPassword = !showPassword;
 
     void HandleLogin()
     {
-        // Kiểm tra logic theo email
-        if (email == "admin@gmail.com" && password == "123")
+        error = "";
+        var user = Db.Users.FirstOrDefault(u => u.Email == email && u.Password == password);
+        if (user == null)
         {
-            Nav.NavigateTo("/Admin/Dashboard");
+            user = Db.Users.FirstOrDefault(u => u.Username == email && u.Password == password);
         }
-        else if (email == "staff@gmail.com" && password == "123")
+
+        if (user == null)
         {
-            Nav.NavigateTo("/Staff/Import");
+            error = "Tài khoản hoặc mật khẩu không chính xác!";
+            return;
+        }
+
+        if (user.Status != "Active")
+        {
+            error = "Tài khoản này đã bị khóa. Vui lòng liên hệ Admin.";
+            return;
+        }
+        Session.SetUser(user);
+        if (user.Role == 1)
+        {
+            Nav.NavigateTo("/admin/dashboard");
         }
         else
         {
-            error = "Email hoặc mật khẩu không chính xác";
+            Nav.NavigateTo("/staff/import");
         }
     }
-
 }
-

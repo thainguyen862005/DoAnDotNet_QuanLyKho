@@ -1,6 +1,7 @@
-using QuanLyKho.Components;
 using Microsoft.EntityFrameworkCore;
+using QuanLyKho.Components;
 using QuanLyKho.Data;
+using QuanLyKho.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +14,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
-// ------------------------------------------------
+builder.Services.AddScoped<UserSession>();
 
 var app = builder.Build();
 

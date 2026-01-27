@@ -1,4 +1,6 @@
 @inject NavigationManager Navigation
+@inject QuanLyKho.Services.UserSession UserSession
+@rendermode InteractiveServer
 
 <nav class="d-flex flex-column vh-100 sidebar sticky-top">
 
@@ -27,11 +29,11 @@
         <NavLink class="nav-link sidebar-link" href="/admin/users">
             📋 Quản lý người dùng
         </NavLink>
-
     </div>
 
-    <div class="p-3 mt-auto bg-dark">
-        <hr class="text-secondary mt-0">
+    <div class="mt-auto">
+        <hr class="text-secondary">
+
         <button class="logout-btn w-100" @onclick="Logout">
             🚪 Đăng xuất
         </button>
@@ -43,7 +45,6 @@
     /* SIDEBAR */
     .sidebar {
         background-color: #212529;
-        /* Đảm bảo sidebar chiếm full chiều cao viewport */
         height: 100vh !important;
     }
 
@@ -52,7 +53,6 @@
         color: white;
     }
 
-    /* Tùy chỉnh thanh cuộn cho đẹp (Webkit browsers: Chrome, Edge...) */
     .custom-scrollbar::-webkit-scrollbar {
         width: 6px;
     }
@@ -106,15 +106,16 @@
         transition: all 0.2s ease;
     }
 
-        .logout-btn:hover {
+    .logout-btn:hover {
             background-color: #dc3545;
             color: #fff;
-        }
+    }
 </style>
 
 @code {
     void Logout()
     {
+        UserSession.ClearUser();
         Navigation.NavigateTo("/login", true);
     }
 }

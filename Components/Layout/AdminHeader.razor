@@ -1,4 +1,7 @@
+@using QuanLyKho.Services
 @inject NavigationManager Navigation
+@inject UserSession Session
+@rendermode InteractiveServer
 
 <header class="bg-white border-bottom px-4 py-2 d-flex justify-content-between align-items-center">
 
@@ -7,28 +10,41 @@
     <div class="dropdown">
         <a class="d-flex align-items-center text-decoration-none dropdown-toggle" href="#" data-bs-toggle="dropdown">
 
-            <img src="" class="rounded-circle me-2" width="36" height="36">
+            <div class="rounded-circle me-2 bg-secondary text-white d-flex justify-content-center align-items-center"
+                 style="width: 36px; height: 36px; font-weight:bold;">
+                @(Session.CurrentUser?.Username.Substring(0, 1).ToUpper() ?? "A")
+            </div>
 
-            <span class="fw-semibold">Nguyễn Hoàng Thái</span>
+            <span class="fw-semibold text-dark">
+                @(Session.CurrentUser?.Username ?? "Khách")
+            </span>
         </a>
 
         <ul class="dropdown-menu dropdown-menu-end">
             <li>
-                <span class="dropdown-item-text text-muted">
-                    Role: Admin
+                <span class="dropdown-item-text text-muted small">
+                    Vai trò: @(Session.CurrentUser?.Role == 1 ? "Admin" : "Nhân viên")
                 </span>
             </li>
             <li>
                 <hr class="dropdown-divider">
             </li>
             <li>
-                <button class="dropdown-item text-danger">
+                <button class="dropdown-item text-danger" @onclick="Logout">
                     🚪 Đăng xuất
-                    
                 </button>
-                
             </li>
         </ul>
     </div>
 
 </header>
+
+@code {
+    void Logout()
+    {
+        // 1. Xóa session
+        Session.ClearUser();
+        // 2. Chuyển về trang login và tải lại trang (forceLoad: true)
+        Navigation.NavigateTo("/login", true);
+    }
+}

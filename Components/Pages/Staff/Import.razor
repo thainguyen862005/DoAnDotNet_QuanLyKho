@@ -1,35 +1,63 @@
 @page "/staff/import"
-@layout StaffLayout
+@layout Components.Layout.StaffLayout
+@using QuanLyKho.Data
+@using QuanLyKho.Services
 @rendermode InteractiveServer
+
+@inject AppDbContext Db
+@inject UserSession Session
 @inject NavigationManager Nav
 
-<h3>Nhập kho (Staff)</h3>
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="text-secondary">Nhập kho (Staff)</h3>
+    </div>
 
-<div class="card shadow mb-4">
-    <div class="card-body">
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <div class="alert alert-danger">@errorMessage</div>
-        }
+    <div class="row">
+        <div class="col-md-12 col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom-0 pt-3">
+                    <h5 class="mb-0 text-primary"><i class="bi bi-box-arrow-in-down"></i> Thông tin phiếu nhập</h5>
+                </div>
 
-        <div class="mb-3">
-            <label class="form-label fw-bold">Mã hoặc tên sản phẩm:</label>
-            <input class="form-control" @bind="maHoacTen" placeholder="Nhập mã hoặc tên..." />
-        </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            @errorMessage
+                            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success alert-dismissible fade show">
+                            @successMessage
+                            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+                        </div>
+                    }
 
-        <div class="mb-3">
-            <label class="form-label fw-bold">Số lượng:</label>
-            <input type="number" class="form-control" @bind="soLuong" min="1" />
-        </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Mã sản phẩm (SKU) hoặc Tên:</label>
+                        <input class="form-control" @bind="maHoacTen" placeholder="Nhập mã hoặc tên sản phẩm..." />
+                        <small class="text-muted">Hệ thống sẽ tự động tìm kiếm sản phẩm gần đúng.</small>
+                    </div>
 
-        <div class="mb-3">
-            <label class="form-label fw-bold">Ghi chú:</label>
-            <textarea class="form-control" rows="2" @bind="ghiChu"></textarea>
-        </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Số lượng nhập:</label>
+                        <input type="number" class="form-control" @bind="soLuong" min="1" />
+                    </div>
 
-        <div class="d-flex justify-content-end gap-2">
-            <button class="btn btn-secondary" @onclick="HuyBo">Hủy</button>
-            <button class="btn btn-primary" @onclick="XuLyNhap">Xác nhận nhập</button>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ghi chú:</label>
+                        <textarea class="form-control" rows="2" @bind="ghiChu" placeholder="Ví dụ: Nhập hàng mới về, Hàng bảo hành..."></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-secondary" @onclick="HuyBo">Làm mới</button>
+                        <button class="btn btn-primary fw-bold" @onclick="XuLyNhap">Xác nhận Nhập</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -39,29 +67,67 @@
     private int soLuong = 1;
     private string? ghiChu;
     private string? errorMessage;
+    private string? successMessage;
 
     private void XuLyNhap()
     {
+        errorMessage = null;
+        successMessage = null;
+
         if (string.IsNullOrWhiteSpace(maHoacTen))
         {
-            errorMessage = "Vui lòng nhập mã hoặc tên sản phẩm.";
+            errorMessage = "Vui lòng nhập Mã hoặc Tên sản phẩm.";
             return;
         }
 
         if (soLuong <= 0)
         {
-            errorMessage = "Số lượng phải lớn hơn 0.";
+            errorMessage = "Số lượng nhập phải lớn hơn 0.";
             return;
         }
 
-        // TODO: gọi API hoặc lưu dữ liệu
+        // 1. Tìm sản phẩm trong DB (Ưu tiên tìm theo SKU, sau đó tìm theo Tên)
+        var product = Db.Products.FirstOrDefault(p => p.SKU == maHoacTen)
+                   ?? Db.Products.FirstOrDefault(p => p.Name.Contains(maHoacTen));
 
-        // Trả về trang inventory staff sau khi thêm
-        Nav.NavigateTo("/staff/inventory");
+        if (product == null)
+        {
+            errorMessage = "Không tìm thấy sản phẩm này! Nếu là sản phẩm mới, vui lòng liên hệ Admin để tạo hồ sơ sản phẩm trước.";
+            return;
+        }
+
+        // 2. Cộng tồn kho
+        product.Stock += soLuong;
+
+        // 3. Ghi lịch sử
+        var log = new InventoryLog
+        {
+            ProductName = product.Name,
+            SKU = product.SKU,
+            Type = "Nhập",
+            Quantity = soLuong,
+            StaffName = Session.CurrentUser?.Username ?? "Staff",
+            Note = ghiChu,
+            CreatedAt = DateTime.Now
+        };
+
+        Db.InventoryLogs.Add(log);
+        Db.SaveChanges(); // Lưu xuống SQL
+
+        successMessage = $"Đã nhập thêm {soLuong} cái cho '{product.Name}'. Tồn kho mới: {product.Stock}";
+
+        // Reset form
+        maHoacTen = "";
+        soLuong = 1;
+        ghiChu = "";
     }
 
     private void HuyBo()
     {
-        Nav.NavigateTo("/staff/inventory");
+        maHoacTen = "";
+        soLuong = 1;
+        ghiChu = "";
+        errorMessage = null;
+        successMessage = null;
     }
 }

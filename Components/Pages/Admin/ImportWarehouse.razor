@@ -1,8 +1,9 @@
 ﻿@page "/admin/import"
-@layout AdminLayout
-@using QuanLyKho.Components.Layout
-@inject NavigationManager Nav
+@layout Components.Layout.AdminLayout
+@using QuanLyKho.Data
 @rendermode InteractiveServer
+@inject NavigationManager Nav
+@inject AppDbContext Db
 
 <PageTitle>Nhập kho</PageTitle>
 
@@ -22,14 +23,19 @@
                     {
                         <div class="alert alert-danger">@errorMessage</div>
                     }
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success">@successMessage</div>
+                    }
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Mã sản phẩm:</label>
-                        <input class="form-control" @bind="maSanPham" placeholder="Nhập mã sản phẩm..." />
+                        <label class="form-label fw-bold">Mã sản phẩm (SKU):</label>
+                        <input class="form-control" @bind="maSanPham" placeholder="Ví dụ: IP-15-PRO..." />
+                        <small class="text-muted">Nhập chính xác mã SKU để hệ thống tìm nhanh hơn.</small>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Tên sản phẩm:</label>
+                        <label class="form-label fw-bold">Tên sản phẩm (Nếu không nhớ mã):</label>
                         <input class="form-control" @bind="tenSanPham" placeholder="Nhập tên sản phẩm..." />
                     </div>
 
@@ -45,8 +51,8 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Nhà cung cấp:</label>
-                        <input class="form-control" @bind="nhaCungCap" placeholder="Tên nhà cung cấp..." />
+                        <label class="form-label fw-bold">Nhà cung cấp / Nguồn:</label>
+                        <input class="form-control" @bind="nhaCungCap" placeholder="Nhập từ..." />
                     </div>
 
                     <div class="mb-3">
@@ -55,7 +61,7 @@
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button class="btn btn-secondary" @onclick="HuyBo">Hủy bỏ</button>
+                        <button class="btn btn-secondary" @onclick="HuyBo">Quay lại</button>
                         <button class="btn btn-success" @onclick="XuLyNhapKho">Xác nhận Nhập</button>
                     </div>
                 </div>
@@ -68,10 +74,12 @@
                     <h6 class="m-0 font-weight-bold">Tóm tắt</h6>
                 </div>
                 <div class="card-body">
-                    <p class="mb-1"><strong>Mã SP:</strong> @maSanPham</p>
-                    <p class="mb-1"><strong>Tên SP:</strong> @tenSanPham</p>
-                    <p class="mb-1"><strong>Số lượng:</strong> @soLuong</p>
-                    <p class="mb-1"><strong>Nhà cung cấp:</strong> @nhaCungCap</p>
+                    <p class="mb-1"><strong>Mã SKU:</strong> @(string.IsNullOrEmpty(maSanPham) ? "-" : maSanPham)</p>
+                    <p class="mb-1"><strong>Tên SP:</strong> @(string.IsNullOrEmpty(tenSanPham) ? "-" : tenSanPham)</p>
+                    <p class="mb-1"><strong>Số lượng:</strong> <span class="text-success fw-bold">+@soLuong</span></p>
+                    <p class="mb-1"><strong>Nguồn:</strong> @nhaCungCap</p>
+                    <hr />
+                    <small class="text-muted">Lưu ý: Sau khi xác nhận, số lượng tồn kho của sản phẩm sẽ tăng lên tương ứng.</small>
                 </div>
             </div>
         </div>
@@ -86,30 +94,67 @@
     private string? nhaCungCap;
     private string? ghiChu;
     private string? errorMessage;
+    private string? successMessage;
 
     private void XuLyNhapKho()
     {
+        errorMessage = null;
+        successMessage = null;
+
         if (string.IsNullOrWhiteSpace(maSanPham) && string.IsNullOrWhiteSpace(tenSanPham))
         {
-            errorMessage = "Vui lòng nhập Mã hoặc Tên sản phẩm.";
+            errorMessage = "Vui lòng nhập Mã SKU hoặc Tên sản phẩm để tìm kiếm.";
             return;
         }
 
         if (soLuong <= 0)
         {
-            errorMessage = "Số lượng phải lớn hơn 0.";
+            errorMessage = "Số lượng nhập phải lớn hơn 0.";
             return;
         }
 
-        // TODO: Thêm logic lưu vào DB hoặc gọi API
+        Product? product = null;
 
-        // Sau khi xử lý, điều hướng về danh sách tồn kho admin
-        Nav.NavigateTo("/admin/inventory");
+        if (!string.IsNullOrWhiteSpace(maSanPham))
+        {
+            product = Db.Products.FirstOrDefault(p => p.SKU == maSanPham);
+        }
+
+        if (product == null && !string.IsNullOrWhiteSpace(tenSanPham))
+        {
+            product = Db.Products.FirstOrDefault(p => p.Name.Contains(tenSanPham));
+        }
+
+        if (product == null)
+        {
+            errorMessage = "Không tìm thấy sản phẩm nào khớp với thông tin nhập vào. Vui lòng kiểm tra lại hoặc tạo sản phẩm mới ở trang Quản lý sản phẩm.";
+            return;
+        }
+
+        product.Stock += soLuong;
+
+        var log = new InventoryLog
+        {
+            ProductName = product.Name,
+            SKU = product.SKU,
+            Type = "Nhập",
+            Quantity = soLuong,
+            StaffName = "Admin",
+            Note = $"Nguồn: {nhaCungCap}. Ghi chú: {ghiChu}",
+            CreatedAt = ngayNhap
+        };
+
+        Db.InventoryLogs.Add(log);
+        Db.SaveChanges();
+        successMessage = $"Đã nhập thành công {soLuong} chiếc cho sản phẩm: {product.Name}. Tồn kho mới: {product.Stock}";
+        maSanPham = "";
+        tenSanPham = "";
+        soLuong = 1;
+        ghiChu = "";
     }
 
     private void HuyBo()
     {
-        Nav.NavigateTo("/admin/inventory");
+        Nav.NavigateTo("/admin/products");
     }
 }
-

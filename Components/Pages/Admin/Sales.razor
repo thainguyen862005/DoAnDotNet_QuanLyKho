@@ -1,8 +1,12 @@
 @page "/admin/sales"
-@layout AdminLayout
-@using QuanLyKho.Components.Layout
-@inject NavigationManager Nav
+@layout Components.Layout.AdminLayout
+@using QuanLyKho.Data
+@using QuanLyKho.Services
 @rendermode InteractiveServer
+
+@inject AppDbContext Db
+@inject UserSession Session
+@inject NavigationManager Nav
 
 <PageTitle>Bán hàng</PageTitle>
 
@@ -14,334 +18,176 @@
     <div class="row">
         <div class="col-lg-7">
             <div class="card shadow mb-4">
-                <div class="card-header py-3 border-left-primary">
-                    <h6 class="m-0 font-weight-bold text-primary">Thông tin bán hàng</h6>
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Thông tin đơn hàng</h6>
                 </div>
                 <div class="card-body">
                     @if (!string.IsNullOrEmpty(errorMessage))
                     {
                         <div class="alert alert-danger">@errorMessage</div>
                     }
+                    @if (showSuccess)
+                    {
+                        <div class="alert alert-success">Thanh toán thành công!</div>
+                    }
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Tên sản phẩm:</label>
-                        <select class="form-control" @onchange="OnProductChange">
+                        <label class="form-label fw-bold">Chọn sản phẩm:</label>
+                        <select class="form-select" @onchange="OnProductChange">
                             <option value="">-- Chọn sản phẩm --</option>
-                            @foreach (var prod in mockProducts)
+                            @foreach (var prod in products)
                             {
-                                <option value="@prod.Id" disabled="@(prod.TonKho == 0)">
-                                    @prod.TenSanPham @(prod.TonKho == 0 ? "(Hết hàng)" : "")
+                                <option value="@prod.Id" disabled="@(prod.Stock <= 0)">
+                                    @prod.Name - Giá: @prod.Price.ToString("N0") - (Còn: @prod.Stock)
                                 </option>
                             }
                         </select>
                     </div>
 
                     <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold">Hãng:</label>
-                            <input class="form-control" value="@selectedProduct?.Hang" readonly disabled />
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold">Giá bán:</label>
-                            <input class="form-control" value="@(selectedProduct?.Gia.ToString("N0") ?? "0") VNĐ" readonly disabled />
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold">Tồn kho:</label>
-                            <input class="form-control text-danger fw-bold" value="@(selectedProduct != null ? selectedProduct.TonKho + " máy" : "")" readonly disabled />
-                        </div>
-                    </div>
-
-                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Số lượng:</label>
-                            <input type="number" class="form-control" @bind="soLuong" min="1" max="@(selectedProduct?.TonKho ?? 1)" />
+                            <input type="number" class="form-control" @bind="soLuong" min="1" />
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Ngày mua:</label>
-                            <input type="date" class="form-control" @bind="ngayMua" />
+                            <label class="form-label fw-bold">Tên khách hàng:</label>
+                            <input class="form-control" @bind="tenKhachHang" placeholder="Anh A, Chị B..." />
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Người nhận / Khách hàng:</label>
-                        <input class="form-control" @bind="nguoiNhan" placeholder="Tên khách hàng..." />
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Tên nhân viên bán:</label>
-                        <input class="form-control" @bind="nhanVienBan" placeholder="Tên nhân viên..." />
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button class="btn btn-secondary" @onclick="HuyBo">Làm mới</button>
-                        <button class="btn btn-primary" @onclick="ThemVaoGioHang" disabled="@(selectedProduct == null || selectedProduct.TonKho == 0)">
-                            <i class="bi bi-cart-plus"></i> Thêm vào giỏ hàng
-                        </button>
-                    </div>
+                    <button class="btn btn-primary w-100 fw-bold" @onclick="ThemVaoGio">
+                        <i class="bi bi-cart-plus"></i> Thêm vào đơn
+                    </button>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-5">
             <div class="card shadow mb-4">
-                <div class="card-header py-3 bg-warning text-dark d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold"><i class="bi bi-cart"></i> Giỏ hàng</h6>
-                    <span class="badge bg-danger text-white">@gioHang.Count món</span>
+                <div class="card-header py-3 bg-success text-white">
+                    <h6 class="m-0 font-weight-bold">Giỏ hàng hiện tại</h6>
                 </div>
                 <div class="card-body">
-                    @if (gioHang.Count == 0)
+                    @if (cart.Any())
                     {
-                        <p class="text-muted text-center py-3">Chưa có sản phẩm nào trong giỏ.</p>
+                        <ul class="list-group mb-3">
+                            @foreach (var item in cart)
+                            {
+                                <li class="list-group-item d-flex justify-content-between lh-sm">
+                                    <div>
+                                        <h6 class="my-0">@item.ProductName</h6>
+                                        <small class="text-muted">SL: @item.Quantity x @item.UnitPrice.ToString("N0")</small>
+                                    </div>
+                                    <span class="text-muted">@item.TotalAmount.ToString("N0")</span>
+                                </li>
+                            }
+                            <li class="list-group-item d-flex justify-content-between bg-light">
+                                <span class="fw-bold">TỔNG CỘNG (VNĐ)</span>
+                                <strong class="text-success">@cart.Sum(x => x.TotalAmount).ToString("N0")</strong>
+                            </li>
+                        </ul>
+                        <button class="btn btn-success w-100 fw-bold" @onclick="ThanhToan">
+                            💰 XÁC NHẬN THANH TOÁN
+                        </button>
                     }
                     else
                     {
-                        <div class="table-responsive" style="max-height: 300px; overflow-y:auto;">
-                            <table class="table table-sm table-bordered">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>SP</th>
-                                        <th>SL</th>
-                                        <th>Đơn giá</th>
-                                        <th>Thành tiền</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var item in gioHang)
-                                    {
-                                        <tr>
-                                            <td>
-                                                <strong>@item.TenSanPham</strong><br/>
-                                                <small class="text-muted">@item.Hang</small>
-                                            </td>
-                                            <td class="text-center">@item.SoLuong</td>
-                                            <td class="text-end">@item.DonGia.ToString("N0")</td>
-                                            <td class="text-end fw-bold">@item.ThanhTien.ToString("N0")</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                        <hr />
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="m-0">Tổng tiền:</h5>
-                            <h4 class="m-0 text-danger fw-bold">@TongTien.ToString("N0") VNĐ</h4>
-                        </div>
-                        
-                        <button class="btn btn-success w-100 py-2 fw-bold" @onclick="XacNhanThanhToan">
-                            XÁC NHẬN THANH TOÁN
-                        </button>
+                        <div class="text-center text-muted py-4">Chưa có sản phẩm nào</div>
                     }
                 </div>
-            </div>
-        </div>
-    </div>
-
-    @if (showSuccessBox)
-    {
-        <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5);">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-body text-center py-5">
-                        <div class="text-success mb-3" style="font-size: 3rem;">
-                            <i class="bi bi-check-circle-fill"></i> &#10004;
-                        </div>
-                        <h3>Cảm ơn bạn đã mua hàng!</h3>
-                        <p class="text-muted">Đơn hàng đã được lưu vào lịch sử.</p>
-                        <button class="btn btn-primary mt-3" @onclick="DongThongBao">Đóng</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-
-    <div class="card shadow mb-4 mt-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-gray-800">Lịch sử thanh toán</h6>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Ngày mua</th>
-                            <th>Tên sản phẩm</th>
-                            <th>Hãng</th>
-                            <th>Số lượng</th>
-                            <th>Giá bán</th>
-                            <th>Thành tiền</th>
-                            <th>Người mua</th>
-                            <th>NV Bán</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (lichSuGiaoDich.Count == 0)
-                        {
-                            <tr>
-                                <td colspan="8" class="text-center text-muted">Chưa có giao dịch nào.</td>
-                            </tr>
-                        }
-                        else
-                        {
-                            @foreach (var ls in lichSuGiaoDich)
-                            {
-                                <tr>
-                                    <td>@ls.NgayMua.ToString("dd/MM/yyyy")</td>
-                                    <td>@ls.TenSanPham</td>
-                                    <td>@ls.Hang</td>
-                                    <td class="text-center">@ls.SoLuong</td>
-                                    <td class="text-end">@ls.DonGia.ToString("N0")</td>
-                                    <td class="text-end fw-bold">@ls.ThanhTien.ToString("N0")</td>
-                                    <td>@ls.NguoiNhan</td>
-                                    <td>@ls.NhanVienBan</td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
 </div>
 
 @code {
-    public class ProductInfo
-    {
-        public int Id { get; set; }
-        public string TenSanPham { get; set; } = "";
-        public string Hang { get; set; } = "";
-        public decimal Gia { get; set; }
-        public int TonKho { get; set; } // Thêm thuộc tính Tồn kho
-    }
+    private List<Product> products = new();
+    private List<Order> cart = new();
 
-    // Dữ liệu lấy từ hình ảnh
-    private List<ProductInfo> mockProducts = new List<ProductInfo>
-    {
-        new ProductInfo { Id=1, TenSanPham="iPhone 17 Pro Max (256GB)", Hang="Apple", Gia=32990000, TonKho=15 },
-        new ProductInfo { Id=2, TenSanPham="Samsung Galaxy S26 Ultra (512GB)", Hang="Samsung", Gia=29500000, TonKho=8 },
-        new ProductInfo { Id=3, TenSanPham="Xiaomi 16 Pro (256GB)", Hang="Xiaomi", Gia=18900000, TonKho=0 }, // Hết hàng
-        new ProductInfo { Id=4, TenSanPham="Oppo Find X9 (128GB)", Hang="Oppo", Gia=15500000, TonKho=24 },
-        new ProductInfo { Id=5, TenSanPham="Google Pixel 10 (256GB)", Hang="Google", Gia=21000000, TonKho=3 },
-    };
-
-    private ProductInfo? selectedProduct;
+    private int selectedProductId;
     private int soLuong = 1;
-    private DateTime ngayMua = DateTime.Now;
-    private string nguoiNhan = "";
-    private string nhanVienBan = "";
-    private string? errorMessage;
-    private bool showSuccessBox = false;
+    private string tenKhachHang = "";
+    private string errorMessage = "";
+    private bool showSuccess = false;
 
-    public class CartItem
+    protected override void OnInitialized()
     {
-        public string TenSanPham { get; set; } = "";
-        public string Hang { get; set; } = "";
-        public int SoLuong { get; set; }
-        public decimal DonGia { get; set; }
-        public decimal ThanhTien => SoLuong * DonGia;
-        public DateTime NgayMua { get; set; }
-        public string NguoiNhan { get; set; } = "";
-        public string NhanVienBan { get; set; } = "";
+        LoadProducts();
     }
 
-    private List<CartItem> gioHang = new List<CartItem>();
-    private List<CartItem> lichSuGiaoDich = new List<CartItem>();
-
-    private decimal TongTien => gioHang.Sum(x => x.ThanhTien);
+    private void LoadProducts()
+    {
+        // Lấy danh sách sản phẩm từ DB
+        products = Db.Products.ToList();
+    }
 
     private void OnProductChange(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value?.ToString(), out int id))
         {
-            selectedProduct = mockProducts.FirstOrDefault(p => p.Id == id);
-            // Reset số lượng về 1 khi chọn sản phẩm mới, nhưng nếu hết hàng thì để 0
-            if (selectedProduct != null && selectedProduct.TonKho == 0)
-            {
-                 soLuong = 0;
-            }
-            else 
-            {
-                soLuong = 1;
-            }
-        }
-        else
-        {
-            selectedProduct = null;
+            selectedProductId = id;
         }
     }
 
-    private void ThemVaoGioHang()
+    private void ThemVaoGio()
     {
-        errorMessage = null;
+        errorMessage = "";
+        showSuccess = false;
 
-        if (selectedProduct == null)
+        var product = products.FirstOrDefault(p => p.Id == selectedProductId);
+        if (product == null)
         {
-            errorMessage = "Vui lòng chọn sản phẩm.";
+            errorMessage = "Vui lòng chọn sản phẩm!";
             return;
-        }
-        
-        // Logic kiểm tra tồn kho theo ảnh
-        if (selectedProduct.TonKho <= 0)
-        {
-             errorMessage = "Sản phẩm này đã hết hàng.";
-             return;
-        }
-
-        if (soLuong > selectedProduct.TonKho)
-        {
-             errorMessage = $"Trong kho chỉ còn {selectedProduct.TonKho} máy. Vui lòng giảm số lượng.";
-             return;
         }
 
         if (soLuong <= 0)
         {
-            errorMessage = "Số lượng phải lớn hơn 0.";
-            return;
-        }
-        
-        if (string.IsNullOrWhiteSpace(nguoiNhan) || string.IsNullOrWhiteSpace(nhanVienBan))
-        {
-            errorMessage = "Vui lòng nhập tên Khách hàng và Nhân viên bán.";
+            errorMessage = "Số lượng phải lớn hơn 0!";
             return;
         }
 
-        gioHang.Add(new CartItem
+        if (soLuong > product.Stock)
         {
-            TenSanPham = selectedProduct.TenSanPham,
-            Hang = selectedProduct.Hang,
-            SoLuong = soLuong,
-            DonGia = selectedProduct.Gia,
-            NgayMua = ngayMua,
-            NguoiNhan = nguoiNhan,
-            NhanVienBan = nhanVienBan
-        });
+            errorMessage = $"Kho chỉ còn {product.Stock} sản phẩm!";
+            return;
+        }
 
-        // Tạm thời trừ tồn kho ảo (chỉ trên UI hiện tại) để tránh mua quá số lượng liên tiếp
-        selectedProduct.TonKho -= soLuong;
+        // Tạo item tạm tính
+        var orderItem = new Order
+        {
+            ProductName = product.Name,
+            Quantity = soLuong,
+            UnitPrice = product.Price,
+            TotalAmount = product.Price * soLuong,
+            CustomerName = tenKhachHang,
+            StaffName = Session.CurrentUser?.Username ?? "Admin",
+            OrderDate = DateTime.Now
+        };
 
-        selectedProduct = null;
-        soLuong = 1;
+        // Trừ tồn kho tạm thời trên giao diện (chưa lưu DB) để tránh chọn quá
+        product.Stock -= soLuong;
+
+        cart.Add(orderItem);
+        soLuong = 1; // Reset số lượng
     }
 
-    private void XacNhanThanhToan()
+    private void ThanhToan()
     {
-        if (gioHang.Count == 0) return;
+        if (!cart.Any()) return;
 
-        lichSuGiaoDich.AddRange(gioHang);
-        gioHang.Clear();
-        showSuccessBox = true;
-    }
+        // Lưu danh sách đơn hàng vào bảng Orders
+        Db.Orders.AddRange(cart);
 
-    private void DongThongBao()
-    {
-        showSuccessBox = false;
-    }
+        // Cập nhật lại tồn kho thật trong bảng Products
+        // Lưu ý: Logic trừ tồn kho trên list 'products' đã làm ở bước ThemVaoGio,
+        // nhưng Entity Framework cần biết để update xuống SQL.
+        // Vì 'products' được load từ DbContext, nên khi gọi SaveChanges nó sẽ tự update.
 
-    private void HuyBo()
-    {
-        selectedProduct = null;
-        soLuong = 1;
-        nguoiNhan = "";
-        nhanVienBan = "";
-        errorMessage = null;
+        Db.SaveChanges();
+
+        cart.Clear();
+        showSuccess = true;
+        tenKhachHang = "";
     }
 }

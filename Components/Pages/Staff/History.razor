@@ -1,96 +1,63 @@
 @page "/staff/history"
-@using QuanLyKho.Components.Layout
-@layout StaffLayout
+@layout Components.Layout.StaffLayout
+@using QuanLyKho.Data
 @rendermode InteractiveServer
-
-<PageTitle>Nhân viên - Lịch sử nhập xuất</PageTitle>
+@inject AppDbContext Db
 
 <div class="container-fluid px-4">
+    <h2 class="mt-4 mb-4 fw-bold text-secondary">Lịch sử Nhập / Xuất</h2>
 
-    <div class="mt-4 mb-4">
-        <h2 class="fw-bold mb-0">Lịch sử nhập / xuất kho</h2>
-        <p class="text-muted">Theo dõi các thao tác kho</p>
-    </div>
-
-    <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-        <div class="row g-2 align-items-center">
-
-            <div class="col-md-4">
-                <input class="form-control"
-                       placeholder="Tìm theo tên hoặc mã sản phẩm..."
-                       @bind="SearchTerm"
-                       @bind:event="oninput" />
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <input class="form-control" placeholder="Tìm tên SP hoặc người thực hiện..." @bind="SearchTerm" @bind:event="oninput" />
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" @bind="TypeFilter">
+                        <option value="">-- Tất cả loại --</option>
+                        <option value="Nhập">Nhập kho</option>
+                        <option value="Xuất">Xuất kho</option>
+                    </select>
+                </div>
             </div>
-
-            <div class="col-md-2">
-                <select class="form-select" @bind="TypeFilter">
-                    <option value="">Tất cả</option>
-                    <option value="Nhập">Nhập</option>
-                    <option value="Xuất">Xuất</option>
-                </select>
-            </div>
-
-            <div class="col-md-2">
-                <input type="date" class="form-control" @bind="FromDate" />
-            </div>
-
-            <div class="col-md-2">
-                <input type="date" class="form-control" @bind="ToDate" />
-            </div>
-
         </div>
     </div>
-</div>
 
-    <div class="card border-0 shadow-sm overflow-hidden">
-        <table class="table table-hover align-middle mb-0">
+    <div class="table-responsive bg-white shadow-sm rounded">
+        <table class="table table-hover mb-0 align-middle">
             <thead class="bg-light">
-                <tr class="text-uppercase text-secondary small fw-bold">
-                    <th class="ps-4">Ngày</th>
-                    <th>Sản phẩm</th>
+                <tr>
+                    <th>Thời gian</th>
                     <th>Loại</th>
+                    <th>Sản phẩm</th>
+                    <th>SKU</th>
                     <th class="text-center">Số lượng</th>
-                    <th>Nhân viên</th>
-                    <th class="pe-4">Ghi chú</th>
+                    <th>Người thực hiện</th>
+                    <th>Ghi chú</th>
                 </tr>
             </thead>
             <tbody>
-                @if (FilteredHistories.Any())
-                {
-                    @foreach (var h in FilteredHistories)
-                    {
-                        <tr>
-                            <td class="ps-4">
-                                @h.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                            </td>
-                            <td>
-                                <div class="fw-bold">@h.ProductName</div>
-                                <small class="text-muted">@h.SKU</small>
-                            </td>
-                            <td>
-                                <span class="badge rounded-pill px-3 py-2 @GetTypeBadge(h.Type)">
-                                    @h.Type
-                                </span>
-                            </td>
-                            <td class="text-center fw-bold">
-                                <span class="@(h.Type == "Nhập" ? "text-success" : "text-danger")">
-                                    @(h.Type == "Nhập" ? "+" : "-")@h.Quantity
-                                </span>
-                            </td>
-                            <td>@h.StaffName</td>
-                            <td class="pe-4 text-muted">
-                                @(string.IsNullOrWhiteSpace(h.Note) ? "-" : h.Note)
-                            </td>
-                        </tr>
-                    }
-                }
-                else
+                @foreach (var log in FilteredLogs)
                 {
                     <tr>
-                        <td colspan="6" class="text-center py-5 text-muted">
-                            Không có dữ liệu
+                        <td>@log.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>
+                            <span class="badge @(log.Type == "Nhập" ? "bg-primary" : "bg-danger")">
+                                @log.Type
+                            </span>
                         </td>
+                        <td class="fw-bold">@log.ProductName</td>
+                        <td class="text-muted small">@log.SKU</td>
+                        <td class="text-center fw-bold">@log.Quantity</td>
+                        <td>@log.StaffName</td>
+                        <td class="text-muted small">@log.Note</td>
+                    </tr>
+                }
+                @if (!FilteredLogs.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">Chưa có dữ liệu lịch sử.</td>
                     </tr>
                 }
             </tbody>
@@ -99,76 +66,18 @@
 </div>
 
 @code {
-
-    public class InventoryHistory
-    {
-        public DateTime CreatedAt { get; set; }
-        public string ProductName { get; set; } = "";
-        public string SKU { get; set; } = "";
-        public string Type { get; set; } = "";
-        public int Quantity { get; set; }
-        public string StaffName { get; set; } = "";
-        public string Note { get; set; } = "";
-    }
-
     private string SearchTerm = "";
     private string TypeFilter = "";
-    private DateTime? FromDate;
-    private DateTime? ToDate;
-    private List<InventoryHistory> histories = new()
-    {
-        new InventoryHistory
-        {
-            CreatedAt = DateTime.Now.AddHours(-2),
-            ProductName = "iPhone 17 Pro Max",
-            SKU = "IP17-PM-256",
-            Type = "Nhập",
-            Quantity = 10,
-            StaffName = "Nguyễn Hoàng Thái",
-            Note = "Nhập từ nhà cung cấp"
-        },
-        new InventoryHistory
-        {
-            CreatedAt = DateTime.Now.AddHours(-1),
-            ProductName = "Samsung Galaxy S26 Ultra",
-            SKU = "SS-S26U-512",
-            Type = "Xuất",
-            Quantity = 2,
-            StaffName = "Nguyễn Thanh Phú",
-            Note = "Xuất bán hàng"
-        },
-        new InventoryHistory
-        {
-            CreatedAt = DateTime.Now.AddDays(-1),
-            ProductName = "Google Pixel 10",
-            SKU = "GG-P10-256",
-            Type = "Xuất",
-            Quantity = 1,
-            StaffName = "Nguyễn Minh Luân",
-            Note = "Máy lỗi"
-        }
-    };
+    private List<InventoryLog> logs = new();
 
-     private List<InventoryHistory> FilteredHistories =>
-        histories
-            .Where(h =>
-                (string.IsNullOrWhiteSpace(SearchTerm)
-                 || h.ProductName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
-                 || h.SKU.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase))
-                &&
-                (string.IsNullOrWhiteSpace(TypeFilter) || h.Type == TypeFilter)
-                &&
-                (!FromDate.HasValue || h.CreatedAt.Date >= FromDate.Value)
-                &&
-                (!ToDate.HasValue || h.CreatedAt.Date <= ToDate.Value)
-            )
-            .OrderByDescending(h => h.CreatedAt)
-            .ToList();
-
-    private string GetTypeBadge(string type) => type switch
+    protected override void OnInitialized()
     {
-        "Nhập" => "bg-success-subtle text-success",
-        "Xuất" => "bg-danger-subtle text-danger",
-        _ => "bg-secondary text-white"
-    };
+        // Load lịch sử từ DB, sắp xếp mới nhất lên đầu
+        logs = Db.InventoryLogs.OrderByDescending(x => x.CreatedAt).ToList();
+    }
+
+    private List<InventoryLog> FilteredLogs => logs
+        .Where(l => (string.IsNullOrEmpty(SearchTerm) || l.ProductName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) || l.StaffName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)) &&
+                    (string.IsNullOrEmpty(TypeFilter) || l.Type == TypeFilter))
+        .ToList();
 }

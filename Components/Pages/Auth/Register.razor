@@ -1,0 +1,128 @@
+﻿@page "/register"
+@layout MainLayout
+@rendermode InteractiveServer
+
+@using QuanLyKho.Data
+@inject NavigationManager Nav
+@inject AppDbContext Db
+
+<div class="d-flex justify-content-center align-items-center vh-100" style="background-color: #f8f9fa;">
+    <div class="card shadow border-0" style="width: 400px; border-radius: 12px;">
+        <div class="card-body p-4">
+
+            <div class="text-center mb-4">
+                <h2 class="fw-bold text-primary">T<span class="text-dark">-Warehouse</span></h2>
+                <p class="text-muted">Đăng ký tài khoản nhân viên</p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="alert alert-success text-center">
+                    <i class="bi bi-check-circle-fill"></i> @successMessage
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger text-center small">@errorMessage</div>
+            }
+
+            <form @onsubmit="HandleRegister">
+                <div class="mb-3">
+                    <label class="fw-bold small">Tên đăng nhập</label>
+                    <input class="form-control" @bind="username" placeholder="Ví dụ: nva2024" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="fw-bold small">Email</label>
+                    <input type="email" class="form-control" @bind="email" placeholder="name@example.com" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="fw-bold small">Mật khẩu</label>
+                    <input type="password" class="form-control" @bind="password" placeholder="******" required />
+                </div>
+
+                <div class="mb-4">
+                    <label class="fw-bold small">Nhập lại mật khẩu</label>
+                    <input type="password" class="form-control" @bind="confirmPassword" placeholder="******" required />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 fw-bold py-2 mb-3">
+                    Đăng Ký Ngay
+                </button>
+            </form>
+
+            <div class="text-center">
+                <small class="text-muted">Đã có tài khoản?</small>
+                <a href="/login" class="text-decoration-none fw-bold">Đăng nhập</a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@code {
+    private string username = "";
+    private string email = "";
+    private string password = "";
+    private string confirmPassword = "";
+
+    private string errorMessage = "";
+    private string successMessage = "";
+
+    private async Task HandleRegister()
+    {
+        errorMessage = "";
+        successMessage = "";
+
+        // 1. Kiểm tra nhập liệu
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "Vui lòng điền đầy đủ thông tin.";
+            return;
+        }
+
+        if (password != confirmPassword)
+        {
+            errorMessage = "Mật khẩu xác nhận không khớp.";
+            return;
+        }
+
+        // 2. Kiểm tra trùng lặp trong Database
+        var existingUser = Db.Users.FirstOrDefault(u => u.Email == email || u.Username == username);
+        if (existingUser != null)
+        {
+            errorMessage = "Email hoặc Tên đăng nhập này đã tồn tại.";
+            return;
+        }
+
+        // 3. Tạo user mới (Mặc định Role 0 - Nhân viên)
+        var newUser = new User
+        {
+            Username = username,
+            Email = email,
+            Password = password,
+            Role = 0,
+            Status = "Active",
+            CreatedAt = DateTime.Now
+        };
+
+        try
+        {
+            Db.Users.Add(newUser);
+            await Db.SaveChangesAsync(); // Lưu vào SQL Server
+
+            // 4. CHUYỂN HƯỚNG VỀ LOGIN
+            successMessage = "Đăng ký thành công! Đang chuyển về trang đăng nhập...";
+            StateHasChanged(); // Cập nhật giao diện để hiện thông báo xanh
+
+            await Task.Delay(1500); // Đợi 1.5 giây cho người dùng đọc
+            Nav.NavigateTo("/login"); // Chuyển trang
+        }
+        catch (Exception)
+        {
+            errorMessage = "Lỗi hệ thống. Vui lòng thử lại sau.";
+        }
+    }
+}

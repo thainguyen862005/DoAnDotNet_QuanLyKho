@@ -1,119 +1,105 @@
 @page "/staff/export"
-@using QuanLyKho.Components.Layout
-@layout StaffLayout
+@layout Components.Layout.StaffLayout
+@using QuanLyKho.Data
+@using QuanLyKho.Services
 @rendermode InteractiveServer
+
+@inject AppDbContext Db
+@inject UserSession Session
 @inject NavigationManager Nav
 
-<PageTitle>Nhân viên - Xuất kho</PageTitle>
-
 <div class="container-fluid mt-3">
-    @* Header đơn giản *@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="text-secondary">Xuất kho (Staff)</h3>
     </div>
 
-    <div class="row">
-        @* CỘT CHÍNH: FORM NHẬP LIỆU *@
-        <div class="col-md-12 col-lg-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-bottom-0 pt-3">
-                    <h5 class="mb-0 text-danger"><i class="bi bi-box-arrow-right"></i> Thông tin phiếu xuất</h5>
-                </div>
-                
-                <div class="card-body">
-                    @* Thông báo lỗi *@
-                    @if (!string.IsNullOrEmpty(errorMessage))
-                    {
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            @errorMessage
-                            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
-                        </div>
-                    }
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger">@errorMessage</div>
+            }
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="alert alert-success">@successMessage</div>
+            }
 
-                    @* Form *@
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Mã sản phẩm hoặc Tên:</label>
-                        <input type="text" class="form-control form-control-lg" @bind="maHoacTen" placeholder="Quét mã vạch hoặc nhập tên..." />
-                        <div class="form-text">Nhân viên có thể dùng máy quét mã vạch vào ô này.</div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Số lượng:</label>
-                            <input type="number" class="form-control form-control-lg" @bind="soLuong" min="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Người nhận hàng:</label>
-                            <input type="text" class="form-control form-control-lg" @bind="nguoiNhan" placeholder="Tên người nhận..." />
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Ghi chú:</label>
-                        <textarea class="form-control" rows="2" @bind="ghiChu" placeholder="Ghi chú thêm nếu có..."></textarea>
-                    </div>
-
-                    @* Nút bấm *@
-                    <div class="d-flex justify-content-end gap-3 mt-4">
-                        <button class="btn btn-secondary px-4" @onclick="HuyBo">Hủy</button>
-                        @* Nút Đỏ to để dễ bấm *@
-                        <button class="btn btn-danger btn-lg px-5" @onclick="XuLyXuat">
-                            Xác nhận Xuất
-                        </button>
-                    </div>
-                </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Mã sản phẩm (SKU) hoặc Tên:</label>
+                <input class="form-control" @bind="searchTerm" placeholder="Nhập SKU hoặc tên để tìm..." />
             </div>
-        </div>
 
-        @* CỘT PHỤ: HƯỚNG DẪN NHANH (Giúp giao diện đỡ trống) *@
-        <div class="col-md-12 col-lg-4 mt-3 mt-lg-0">
-            <div class="card bg-light border-0">
-                <div class="card-body">
-                    <h6 class="fw-bold text-dark">Lưu ý cho nhân viên:</h6>
-                    <ul class="text-muted small ps-3">
-                        <li class="mb-2">Kiểm tra kỹ tình trạng hàng hóa trước khi xuất (bao bì, tem nhãn).</li>
-                        <li class="mb-2">Nếu không tìm thấy mã sản phẩm, hãy liên hệ Admin.</li>
-                        <li class="mb-2">Phiếu xuất sau khi tạo sẽ trừ ngay lập tức vào kho hệ thống.</li>
-                    </ul>
-                </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Số lượng xuất:</label>
+                <input type="number" class="form-control" @bind="quantity" min="1" />
             </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Lý do xuất:</label>
+                <textarea class="form-control" @bind="reason" placeholder="Ví dụ: Xuất bán lẻ, Xuất hủy..."></textarea>
+            </div>
+
+            <button class="btn btn-danger" @onclick="XuLyXuatKho">Xác nhận Xuất</button>
         </div>
     </div>
 </div>
 
 @code {
-    // --- KHAI BÁO BIẾN ---
-    private string? maHoacTen;
-    private int soLuong = 1;
-    private string? nguoiNhan;
-    private string? ghiChu;
-    private string? errorMessage;
+    private string searchTerm = "";
+    private int quantity = 1;
+    private string reason = "";
+    private string errorMessage = "";
+    private string successMessage = "";
 
-    // --- HÀM XỬ LÝ ---
-    private void XuLyXuat()
+    private void XuLyXuatKho()
     {
-        // 1. Validate dữ liệu
-        if (string.IsNullOrWhiteSpace(maHoacTen))
+        errorMessage = "";
+        successMessage = "";
+
+        if (string.IsNullOrWhiteSpace(searchTerm))
         {
-            errorMessage = "Vui lòng nhập Mã hoặc Tên sản phẩm.";
+            errorMessage = "Vui lòng nhập thông tin sản phẩm.";
             return;
         }
 
-        if (soLuong <= 0)
+        // 1. Tìm sản phẩm
+        var product = Db.Products.FirstOrDefault(p => p.SKU == searchTerm)
+                   ?? Db.Products.FirstOrDefault(p => p.Name.Contains(searchTerm));
+
+        if (product == null)
         {
-            errorMessage = "Số lượng xuất phải lớn hơn 0.";
+            errorMessage = "Không tìm thấy sản phẩm này trong kho!";
             return;
         }
 
-        // 2. TODO: Gọi Service để trừ kho
-        // StockService.Export(maHoacTen, soLuong, nguoiNhan);
+        // 2. Kiểm tra tồn kho
+        if (product.Stock < quantity)
+        {
+            errorMessage = $"Không đủ hàng! Tồn kho hiện tại: {product.Stock}";
+            return;
+        }
 
-        // 3. Chuyển hướng về trang danh sách tồn kho của Staff
-        Nav.NavigateTo("/staff/inventory");
-    }
+        // 3. Trừ kho
+        product.Stock -= quantity;
 
-    private void HuyBo()
-    {
-        Nav.NavigateTo("/staff/inventory");
+        // 4. Ghi lịch sử
+        var log = new InventoryLog
+        {
+            ProductName = product.Name,
+            SKU = product.SKU,
+            Type = "Xuất",
+            Quantity = quantity,
+            StaffName = Session.CurrentUser?.Username ?? "Staff",
+            Note = reason,
+            CreatedAt = DateTime.Now
+        };
+
+        Db.InventoryLogs.Add(log);
+        Db.SaveChanges();
+
+        successMessage = $"Đã xuất {quantity} {product.Name}. Tồn kho còn lại: {product.Stock}";
+        searchTerm = "";
+        quantity = 1;
+        reason = "";
     }
 }
