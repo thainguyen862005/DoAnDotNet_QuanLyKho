@@ -1,4 +1,6 @@
 @page "/login"
+@using QuanLyKho.Components.Layout
+@layout MainLayout
 @rendermode InteractiveServer
 @using System.Security.Cryptography
 @using System.Text
@@ -69,6 +71,12 @@
                     <i class="bi bi-person me-2"></i>Tên đăng nhập
                 </label>
             </div>
+                    @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="error-text">
+                @error
+            </div>
+        }
 
             <div class="form-floating mb-4">
                 <input type="password" class="form-control" id="floatingInputPass" placeholder="Nhập mật khẩu"

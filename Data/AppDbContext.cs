@@ -1,22 +1,24 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.ComponentModel;
+using Microsoft.EntityFrameworkCore;
 using QuanLyKho.Models; 
 
 namespace QuanLyKho.Data
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        {
+        }
 
-        public DbSet<Brand> Brands => Set<Brand>();
-        public DbSet<Product> Products => Set<Product>();
-        public DbSet<ProductItem> ProductItems => Set<ProductItem>();
-        public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
-        public DbSet<TransactionDetail> TransactionDetails => Set<TransactionDetail>();
-        public DbSet<Supplier> Suppliers => Set<Supplier>();
-        public DbSet<User> Users => Set<User>();
-        public DbSet<Order> Orders => Set<Order>();
-
-
+        public DbSet<User> Users { get; set; }
+        public DbSet<Product> Products { get; set; }
+        public DbSet<InventoryTransaction> InventoryTransactions {get; set; }
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<Brand> Brands { get; set; }
+        public DbSet<ProductItem> ProductItems { get; set; }
+        public DbSet<TransactionDetail> TransactionDetails { get; set; }
+        public DbSet<OrderDetail> OrderDetails { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

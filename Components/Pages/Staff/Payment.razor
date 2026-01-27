@@ -1,0 +1,72 @@
+@page "/staff/payment"
+@layout QuanLyKho.Components.Layout.StaffLayout
+@using QuanLyKho.Models
+@using QuanLyKho.Services
+@inject IPaymentService PaymentService
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<h3>Thanh toán</h3>
+
+<input class="form-control mb-3"
+       placeholder="Tên khách hàng"
+       @bind="customerName" />
+<p class="text-muted">Khách hàng: @customerName</p>
+@if (!cart.Any())
+{
+    <div class="alert alert-warning">
+        Giỏ hàng trống
+    </div>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Sản phẩm</th>
+                <th>SL</th>
+                <th>Giá</th>
+                <th>Tổng</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in cart)
+            {
+                <tr>
+                    <td>@item.ProductName</td>
+                    <td>@item.Quantity</td>
+                    <td>@item.Price.ToString("N0")</td>
+                    <td>@item.Total.ToString("N0")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h5 class="text-danger">
+        Tổng tiền: @cart.Sum(x => x.Total).ToString("N0") đ
+    </h5>
+
+    <button class="btn btn-success" @onclick="Pay">
+        Xác nhận thanh toán
+    </button>
+}
+
+@code {
+    List<CartItem> cart = new();
+    string customerName = "";
+
+    protected override void OnInitialized()
+    {
+        cart = PaymentService.GetCurrentCart();
+    }
+
+    async Task Pay()
+    {
+        if (!cart.Any())
+            return;
+
+        await PaymentService.PayAsync(customerName);
+
+        Nav.NavigateTo("/admin/sales");
+    }
+}

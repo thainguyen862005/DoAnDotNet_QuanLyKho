@@ -2,9 +2,13 @@
 @layout QuanLyKho.Components.Layout.AdminLayout
 @using QuanLyKho.Data
 @using QuanLyKho.Models
+@using QuanLyKho.Services
 @using Microsoft.EntityFrameworkCore
 @inject AppDbContext Db
 @rendermode InteractiveServer
+@inject NavigationManager Nav
+@inject IPaymentService PaymentService
+
 
 <PageTitle>Bán hàng (Admin)</PageTitle>
 
@@ -223,6 +227,8 @@
                                 <span class="h6 text-muted m-0">Tổng thanh toán:</span>
                                 <span class="h4 text-danger fw-bold m-0">@gioHang.Sum(x => x.Quantity * x.Price).ToString("N0") VNĐ</span>
                             </div>
+                            
+                            <button class="btn btn-success w-100 py-3 fw-bold text-uppercase shadow" @onclick="GoToPayMent">
 
                             <button class="btn btn-success w-100 py-3 fw-bold text-uppercase shadow" @onclick="ThanhToan">
                                 <i class="bi bi-check-circle-fill me-2"></i> Xác nhận thanh toán
@@ -248,6 +254,8 @@
 }
 
 @code {
+    
+    // Khai báo biến
     public class CartItem
     {
         public int SpItemId;
@@ -376,6 +384,11 @@
         }
         else
         {
+            // Thêm mới vào giỏ
+            gioHang.Add(new CartItem {
+                SpItemId = selectedItem.Sp_item_id, 
+                ProductName = selectedItem.Product?.Sp_name ?? "Không tên",
+                Quantity = soLuong, 
             gioHang.Add(new CartItem
             {
                 SpItemId = selectedItem.Sp_item_id,
@@ -498,5 +511,15 @@
             transaction.Rollback();
             errorMessage = "Lỗi thanh toán: " + ex.Message;
         }
+    }
+    private void GoToPayMent()
+    {
+        if (gioHang.Count == 0)
+        {
+            errorMessage = "Giỏ hàng đang trống!";
+            return;
+        }
+        PaymentService.SetCart(gioHang);
+        Nav.NavigateTo("/admin/payment");
     }
 }

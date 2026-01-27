@@ -28,6 +28,8 @@ namespace QuanLyKho.Models
         // Navigation
         [ForeignKey(nameof(Brands_id))]
         public Brand? Brand { get; set; }
+        public decimal Price { get; set; } = 0;
+        public int Quantity { get; set; } = 0;
 
         public ICollection<ProductItem> Items { get; set; } = new List<ProductItem>();
     }
