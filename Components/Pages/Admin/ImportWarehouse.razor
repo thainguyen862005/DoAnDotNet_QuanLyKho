@@ -1,77 +1,113 @@
 ﻿@page "/admin/import"
 @layout AdminLayout
-@using QuanLyKho.Components.Layout
-@inject NavigationManager Nav
 @rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using QuanLyKho.Models
+@using QuanLyKho.Data
+@inject AppDbContext _context
 
 <PageTitle>Nhập kho</PageTitle>
 
 <div class="container-fluid">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Nhập Kho (Admin)</h1>
-    </div>
+    <h1 class="h3 mb-4 text-gray-800">Nhập Kho (Admin)</h1>
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
 
     <div class="row">
         <div class="col-lg-8">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Thông tin phiếu nhập</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">Thông tin nhập kho</h6>
                 </div>
+
                 <div class="card-body">
-                    @if (!string.IsNullOrEmpty(errorMessage))
+
+                    <!-- CHỌN HÃNG -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Chọn hãng</label>
+                        <select class="form-control" @onchange="OnBrandChanged">
+                            <option value="">-- Tất cả hãng --</option>
+                            @foreach (var b in brands)
+                            {
+                                <option value="@b">@b</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- CHỌN SẢN PHẨM -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Chọn sản phẩm (SKU)</label>
+                        <select class="form-control" @onchange="OnProductChanged">
+                            <option value="">-- Chọn sản phẩm --</option>
+                            @foreach (var item in filteredItems)
+                            {
+                                <option value="@item.Sp_item_id">
+                                    @item.Product!.Sp_name - @item.SKU (Tồn: @item.StockQuantity)
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    @if (selectedItem != null)
                     {
-                        <div class="alert alert-danger">@errorMessage</div>
+                        <div class="border rounded p-3 mb-3 bg-light">
+                            <div class="row">
+                                <div class="col-md-4 text-center">
+                                    <img src="/images/no-image.png" class="img-fluid rounded" />
+                                </div>
+                                <div class="col-md-8">
+                                    <p><b>Tên:</b> @selectedItem.Product!.Sp_name</p>
+                                    <p><b>SKU:</b> @selectedItem.SKU</p>
+                                    <p><b>Hãng:</b> @selectedItem.Product.Brand!.Brand_name</p>
+                                    <p><b>Tồn kho hiện tại:</b> @selectedItem.StockQuantity</p>
+                                </div>
+                            </div>
+                        </div>
                     }
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Mã sản phẩm:</label>
-                        <input class="form-control" @bind="maSanPham" placeholder="Nhập mã sản phẩm..." />
+                        <label class="form-label fw-bold">Số lượng nhập</label>
+                        <input type="number" class="form-control" @bind="quantity" min="1" />
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Tên sản phẩm:</label>
-                        <input class="form-control" @bind="tenSanPham" placeholder="Nhập tên sản phẩm..." />
+                        <label class="form-label fw-bold">Ghi chú</label>
+                        <textarea class="form-control" rows="3" @bind="note"></textarea>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Số lượng nhập:</label>
-                            <input type="number" class="form-control" @bind="soLuong" min="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Ngày nhập:</label>
-                            <input type="date" class="form-control" @bind="ngayNhap" />
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Nhà cung cấp:</label>
-                        <input class="form-control" @bind="nhaCungCap" placeholder="Tên nhà cung cấp..." />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Ghi chú:</label>
-                        <textarea class="form-control" rows="3" @bind="ghiChu" placeholder="Ghi chú..."></textarea>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button class="btn btn-secondary" @onclick="HuyBo">Hủy bỏ</button>
-                        <button class="btn btn-success" @onclick="XuLyNhapKho">Xác nhận Nhập</button>
-                    </div>
+                    <button class="btn btn-success" @onclick="NhapKho">Xác nhận nhập kho</button>
                 </div>
             </div>
         </div>
 
+        <!-- PHIẾU NHẬP -->
         <div class="col-lg-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 bg-info text-white">
-                    <h6 class="m-0 font-weight-bold">Tóm tắt</h6>
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h6 class="m-0">Phiếu nhập</h6>
                 </div>
                 <div class="card-body">
-                    <p class="mb-1"><strong>Mã SP:</strong> @maSanPham</p>
-                    <p class="mb-1"><strong>Tên SP:</strong> @tenSanPham</p>
-                    <p class="mb-1"><strong>Số lượng:</strong> @soLuong</p>
-                    <p class="mb-1"><strong>Nhà cung cấp:</strong> @nhaCungCap</p>
+                    @if (selectedItem != null)
+                    {
+                        <p><b>Sản phẩm:</b> @selectedItem.Product!.Sp_name</p>
+                        <p><b>Hãng:</b> @selectedItem.Product.Brand!.Brand_name</p>
+                        <p><b>Số lượng nhập:</b> @quantity</p>
+                        <p><b>Tồn kho sau nhập:</b> @(selectedItem.StockQuantity + quantity)</p>
+                    }
+
+                    @if (!string.IsNullOrEmpty(receiptCode))
+                    {
+                        <hr />
+                        <p><b>Mã phiếu:</b> @receiptCode</p>
+                        <p><b>Ngày nhập:</b> @createdDate?.ToString("dd/MM/yyyy HH:mm")</p>
+                    }
                 </div>
             </div>
         </div>
@@ -79,37 +115,107 @@
 </div>
 
 @code {
-    private string? maSanPham;
-    private string? tenSanPham;
-    private int soLuong = 1;
-    private DateTime ngayNhap = DateTime.Now;
-    private string? nhaCungCap;
-    private string? ghiChu;
+    private List<ProductItem> allItems = new();
+    private List<ProductItem> filteredItems = new();
+    private List<string> brands = new();
+
+    private string? selectedBrand;
+    private ProductItem? selectedItem;
+    private int quantity = 1;
+    private string? note;
+
+    private string? successMessage;
     private string? errorMessage;
 
-    private void XuLyNhapKho()
+    private string? receiptCode;
+    private DateTime? createdDate;
+
+    protected override void OnInitialized()
     {
-        if (string.IsNullOrWhiteSpace(maSanPham) && string.IsNullOrWhiteSpace(tenSanPham))
+        allItems = _context.ProductItems
+            .Include(i => i.Product)!
+                .ThenInclude(p => p.Brand)
+            .ToList();
+
+        brands = allItems
+            .Where(i => i.Product!.Brand != null)
+            .Select(i => i.Product!.Brand!.Brand_name)
+            .Distinct()
+            .OrderBy(b => b)
+            .ToList();
+
+        filteredItems = allItems;
+    }
+
+    private void OnBrandChanged(ChangeEventArgs e)
+    {
+        selectedBrand = e.Value?.ToString();
+        selectedItem = null;
+
+        if (string.IsNullOrWhiteSpace(selectedBrand))
+            filteredItems = allItems;
+        else
+            filteredItems = allItems
+                .Where(i => i.Product!.Brand!.Brand_name == selectedBrand)
+                .ToList();
+    }
+
+    private void OnProductChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id))
         {
-            errorMessage = "Vui lòng nhập Mã hoặc Tên sản phẩm.";
+            selectedItem = allItems.FirstOrDefault(i => i.Sp_item_id == id);
+        }
+    }
+
+    private async Task NhapKho()
+    {
+        errorMessage = successMessage = null;
+
+        if (selectedItem == null)
+        {
+            errorMessage = "Vui lòng chọn sản phẩm.";
             return;
         }
 
-        if (soLuong <= 0)
+        if (quantity <= 0)
         {
             errorMessage = "Số lượng phải lớn hơn 0.";
             return;
         }
 
-        // TODO: Thêm logic lưu vào DB hoặc gọi API
+        // 1️⃣ Cập nhật tồn kho
+        selectedItem.StockQuantity += quantity;
 
-        // Sau khi xử lý, điều hướng về danh sách tồn kho admin
-        Nav.NavigateTo("/admin/inventory");
-    }
+        // 2️⃣ Tạo phiếu nhập
+        var transaction = new InventoryTransaction
+        {
+            UserID = 1,
+            SupplierID = 1,
+            Type = "Nhập",
+            TransactionDate = DateTime.Now,
+            Note = note
+        };
 
-    private void HuyBo()
-    {
-        Nav.NavigateTo("/admin/inventory");
+        _context.InventoryTransactions.Add(transaction);
+        await _context.SaveChangesAsync();
+
+        // 3️⃣ Chi tiết phiếu
+        var detail = new TransactionDetail
+        {
+            TransactionID = transaction.TransactionID,
+            Sp_item_ID = selectedItem.Sp_item_id,
+            Quantity = quantity,
+            UnitPrice = selectedItem.Price
+        };
+
+        _context.TransactionDetails.Add(detail);
+        await _context.SaveChangesAsync();
+
+        // 4️⃣ Mã phiếu
+        createdDate = transaction.TransactionDate;
+        receiptCode = $"PN-{transaction.TransactionID:0000}";
+
+        successMessage = "Nhập kho thành công!";
     }
 }
-

@@ -14,7 +14,6 @@ namespace QuanLyKho.Data
         public DbSet<Product> Products { get; set; }
         public DbSet<InventoryLog> InventoryLogs { get; set; }
         public DbSet<Order> Orders { get; set; }
-        public DbSet<Brand> Brands { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -24,13 +23,13 @@ namespace QuanLyKho.Data
             modelBuilder.Entity<User>().HasData(
                 new User
                 {
-                    Id = 1,
+                    User_id = 1,
                     Username = "admin",
                     Email = "admin@gmail.com",
-                    Password = "123", // Lưu ý: Thực tế nên mã hóa MD5/BCrypt
-                    Role = 1,
+                    Password_hash = "123", // Lưu ý: Thực tế nên mã hóa MD5/BCrypt
+                    Role = "admin",
                     Status = "Active",
-                    CreatedAt = new DateTime(2024, 1, 1)
+                    CreateAt = new DateTime(2024, 1, 1)
                 }
             );
         }

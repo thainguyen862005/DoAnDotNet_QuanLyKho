@@ -1,31 +1,34 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuanLyKho.Models
 {
-    [Table("Products")]
+    [Table("Sp")]
     public class Product
     {
         [Key]
-        public int Id { get; set; }
+        [Column("Sp_id")]
+        public int Sp_id { get; set; }
 
-        [Required]
-        [MaxLength(200)]
-        public string Name { get; set; } = "";
+        [Column("Brands_id")]
+        public int? Brands_id { get; set; }
 
-        [Required]
-        [MaxLength(50)]
-        public string SKU { get; set; } = "";
+        [Column("Sp_name")]
+        public string Sp_name { get; set; } = "";
 
-        [MaxLength(50)]
-        public string Brand { get; set; } = "";
+        [Column("Specifications")]
+        public string? Specifications { get; set; }
 
-        [MaxLength(50)]
-        public string Storage { get; set; } = "";
+        [Column("Description")]
+        public string? Description { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")] // định dạng tiền tệ 
-        public decimal Price { get; set; } = 0;
+        [Column("ImageUrl")]
+        public string? ImageUrl { get; set; }
 
-        public int Stock { get; set; } = 0;
+        // Navigation
+        [ForeignKey(nameof(Brands_id))]
+        public Brand? Brand { get; set; }
+
+        public ICollection<ProductItem> Items { get; set; } = new List<ProductItem>();
     }
 }
