@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.ComponentModel;
+using Microsoft.EntityFrameworkCore;
 using QuanLyKho.Models; 
 
 namespace QuanLyKho.Data
@@ -13,6 +14,7 @@ namespace QuanLyKho.Data
         public DbSet<Product> Products { get; set; }
         public DbSet<InventoryLog> InventoryLogs { get; set; }
         public DbSet<Order> Orders { get; set; }
+        public DbSet<Brand> Brands { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
