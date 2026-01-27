@@ -16,7 +16,7 @@ builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")),
-    ServiceLifetime.Transient // Hoặc Scoped (mặc định), nhưng cẩn thận trong Blazor Server
+    ServiceLifetime.Transient 
 );    
 
 
