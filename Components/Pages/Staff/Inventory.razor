@@ -1,6 +1,156 @@
 @page "/staff/inventory"
+@using QuanLyKho.Components.Layout
 @layout StaffLayout
 @rendermode InteractiveServer
+@inject NavigationManager Nav
 
-<h3>Kiểm kho</h3>
-<p>Giao diện kiểm kho sẽ được hiển thị ở đây.</p>
+<div class="container-fluid px-4">
+    @* Header *@
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+        <div>
+            <h2 class="fw-bold mb-0 text-secondary">Tra cứu Tồn kho</h2>
+            <p class="text-muted">Kiểm tra số lượng sản phẩm</p>
+        </div>
+        
+        @* Nút điều hướng nhanh cho nhân viên *@
+        <div class="d-flex gap-2">
+            <button class="btn btn-success shadow-sm fw-bold" @onclick='() => Nav.NavigateTo("/staff/import")'>
+                <i class="bi bi-box-arrow-in-down"></i> Nhập hàng
+            </button>
+            <button class="btn btn-danger shadow-sm fw-bold" @onclick='() => Nav.NavigateTo("/staff/export")'>
+                <i class="bi bi-box-arrow-up"></i> Xuất hàng
+            </button>
+        </div>
+    </div>
+
+    @* Thanh tìm kiếm *@
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-2">
+            <div class="input-group border-0">
+                <span class="input-group-text bg-white border-0 text-muted"><i class="bi bi-search"></i></span>
+                <input class="form-control border-0 shadow-none"
+                       placeholder="Tìm kiếm theo tên, mã SKU, hãng..."
+                       @bind="SearchTerm"
+                       @bind:event="oninput" />
+            </div>
+        </div>
+    </div>
+
+    @* Bảng dữ liệu *@
+    <div class="card border-0 shadow-sm overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr class="text-secondary small fw-bold text-uppercase">
+                        <th class="ps-4 py-3">Sản phẩm</th>
+                        <th>SKU</th>
+                        <th>Hãng</th>
+                        <th class="text-center">Tồn kho</th>
+                        <th class="text-center">Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (FilteredProducts.Any())
+                    {
+                        @foreach (var prod in FilteredProducts)
+                        {
+                            <tr @key="prod.Id">
+                                @* Cột 1: Tên & Dung lượng *@
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark fs-6">@prod.Name</div>
+                                    <small class="text-muted text-uppercase" style="font-size: 0.8rem;">@prod.Storage</small>
+                                </td>
+
+                                @* Cột 2: SKU *@
+                                <td class="text-muted">@prod.SKU</td>
+
+                                @* Cột 3: Hãng *@
+                                <td>
+                                    <span class="badge rounded-pill px-3 py-2 @GetBrandBadgeClass(prod.Brand)">
+                                        @prod.Brand
+                                    </span>
+                                </td>
+
+                                @* Cột 4: Tồn kho (Số to rõ ràng) *@
+                                <td class="text-center">
+                                    <span class="fw-bold fs-5 @(prod.Stock < 5 ? "text-danger" : "text-success")">
+                                        @prod.Stock
+                                    </span>
+                                </td>
+
+                                @* Cột 5: Trạng thái (Badge) *@
+                                <td class="text-center">
+                                    @if (prod.Stock > 0)
+                                    {
+                                        <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3">
+                                            Sẵn hàng
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-3">
+                                            Hết hàng
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 opacity-50"></i>
+                                <div class="mt-2">Không tìm thấy sản phẩm nào</div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    // 1. Class Dữ liệu (Giống Admin nhưng đơn giản hơn)
+    public class Product
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string SKU { get; set; } = "";
+        public string Brand { get; set; } = "";
+        public string Storage { get; set; } = "";
+        public int Stock { get; set; }
+    }
+
+    private string SearchTerm = "";
+    
+    // 2. Dữ liệu mẫu (Đồng bộ với Admin)
+    private List<Product> products = new List<Product>
+    {
+        new Product { Id = 1, Name = "iPhone 17 Pro Max", SKU = "IP17-PM-256", Brand = "Apple", Storage = "256GB", Stock = 15 },
+        new Product { Id = 2, Name = "Samsung Galaxy S26 Ultra", SKU = "SS-S26U-512", Brand = "Samsung", Storage = "512GB", Stock = 8 },
+        new Product { Id = 3, Name = "Xiaomi 16 Pro", SKU = "XI-16P-256", Brand = "Xiaomi", Storage = "256GB", Stock = 0 },
+        new Product { Id = 4, Name = "Oppo Find X9", SKU = "OP-X9-128", Brand = "Oppo", Storage = "128GB", Stock = 24 },
+        new Product { Id = 5, Name = "Google Pixel 10", SKU = "GG-P10-256", Brand = "Google", Storage = "256GB", Stock = 3 }
+    };
+
+    // 3. Logic tìm kiếm
+    private List<Product> FilteredProducts => products
+        .Where(p => string.IsNullOrWhiteSpace(SearchTerm) || 
+                    p.Name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) || 
+                    p.SKU.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    p.Brand.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    // 4. Màu Badge Hãng
+    private string GetBrandBadgeClass(string brand) => brand switch
+    {
+        "Apple" => "bg-dark text-white",
+        "Samsung" => "bg-primary text-white",
+        "Xiaomi" => "bg-warning text-dark",
+        "Oppo" => "bg-success text-white",
+        "Google" => "bg-secondary text-white",
+        _ => "bg-light text-dark border"
+    };
+}

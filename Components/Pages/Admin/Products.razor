@@ -1,20 +1,31 @@
 @page "/admin/products"
-@layout AdminLayout
+@using QuanLyKho.Data
+@using Microsoft.EntityFrameworkCore
+@rendermode InteractiveServer
+@layout Components.Layout.AdminLayout
+
+@inject AppDbContext Db
+@inject NavigationManager Nav
 
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
         <div>
             <h2 class="fw-bold mb-0">Quản lý sản phẩm</h2>
-            <p class="text-muted">Danh sách sản phẩm (Dữ liệu mẫu)</p>
+            <p class="text-muted">Dữ liệu thực từ Database (SQL Server)</p>
         </div>
-        <button class="btn btn-success px-4 py-2 fw-bold">+ Thêm sản phẩm</button>
+        <button type="button" class="btn btn-success px-4 py-2 fw-bold" @onclick="OpenAddModal">
+            <i class="bi bi-plus-circle"></i> + Thêm sản phẩm
+        </button>
     </div>
 
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-2">
             <div class="input-group border-0">
                 <span class="input-group-text bg-white border-0 text-muted">🔍</span>
-                <input type="text" class="form-control border-0 shadow-none" placeholder="Tìm kiếm sản phẩm mẫu...">
+                <input class="form-control border-0 shadow-none"
+                       placeholder=" Tìm theo tên, SKU, hãng..."
+                       @bind="SearchTerm"
+                       @bind:event="oninput" />
             </div>
         </div>
     </div>
@@ -33,21 +44,259 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td class="ps-4 fw-bold">Áo khoác Teelab Special</td>
-                    <td class="text-muted">TP-2812</td>
-                    <td><span class="badge rounded-pill bg-success-subtle text-success px-3" style="background-color: #e6f7ed; color: #10b981;">Quần áo</span></td>
-                    <td class="text-end fw-bold">500.000đ</td>
-                    <td class="text-center">54 Chiếc</td>
-                    <td class="text-center">
-                        <span class="badge rounded-pill px-3 py-2" style="background-color: #e6f7ed; color: #10b981;">Đầy đủ</span>
-                    </td>
-                    <td class="text-end pe-4">
-                        <button class="btn btn-link text-success p-0 me-2" style="text-decoration: none;">✏️</button>
-                        <button class="btn btn-link text-danger p-0" style="text-decoration: none;">🗑️</button>
-                    </td>
-                </tr>
+                @if (FilteredProducts.Any())
+                {
+                    @foreach (var prod in FilteredProducts)
+                    {
+                        <tr @key="prod.Id">
+                            <td class="ps-4">
+                                <div class="fw-bold">@prod.Name</div>
+                                <small class="text-muted text-uppercase">Dung lượng: @prod.Storage</small>
+                            </td>
+                            <td class="text-muted">@prod.SKU</td>
+                            <td>
+                                <span class="badge rounded-pill px-3 py-2 @GetBrandBadgeClass(prod.Brand)">
+                                    @prod.Brand
+                                </span>
+                            </td>
+                            <td class="text-end fw-bold text-primary">@prod.Price.ToString("N0")đ</td>
+                            <td class="text-center">
+                                <span class="@(prod.Stock < 5 ? "text-danger fw-bold" : "")">
+                                    @prod.Stock máy
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                @if (prod.Stock > 0)
+                                {
+                                    <span class="badge rounded-pill px-3 py-2" style="background-color: #e6f7ed; color: #10b981;">Sẵn hàng</span>
+                                }
+                                else
+                                {
+                                    <span class="badge rounded-pill px-3 py-2 bg-danger-subtle text-danger">Hết hàng</span>
+                                }
+                            </td>
+                            <td class="text-end pe-4">
+                                <button type="button" class="btn btn-sm" title="Sửa" @onclick="() => OpenEditModal(prod)">
+                                    ✏️
+                                </button>
+                                <button type="button" class="btn btn-sm" title="Xóa" @onclick="() => ConfirmDelete(prod)">
+                                    🗑️
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <img src="https://cdn-icons-png.flaticon.com/512/4076/4076549.png" width="50" class="mb-2 opacity-50" />
+                            <div>
+                                @if (products.Count == 0)
+                                {
+                                    <span>Chưa có dữ liệu. Hãy thêm sản phẩm mới!</span>
+                                }
+                                else
+                                {
+                                    <span>Không tìm thấy sản phẩm nào phù hợp.</span>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
             </tbody>
         </table>
     </div>
 </div>
+
+@if (IsShowModal)
+{
+    <div class="modal fade show d-block" style="background:rgba(0,0,0,.5); z-index:1050" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="fw-bold">@(IsEdit ? "Sửa sản phẩm" : "Thêm sản phẩm")</h5>
+                    <button class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tên sản phẩm</label>
+                        <input class="form-control" @bind="EditingProduct.Name" placeholder="Ví dụ: iPhone 15 Pro..." />
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label>Mã SKU</label>
+                            <input class="form-control" @bind="EditingProduct.SKU" placeholder="IP-15-PRO" />
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label>Hãng</label>
+                            <select class="form-select" @bind="EditingProduct.Brand">
+                                <option value="">-- Chọn --</option>
+                                <option>Apple</option>
+                                <option>Samsung</option>
+                                <option>Xiaomi</option>
+                                <option>Oppo</option>
+                                <option>Google</option>
+                                <option>Khác</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label>Dung lượng</label>
+                            <input class="form-control" @bind="EditingProduct.Storage" placeholder="256GB" />
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label>Giá bán (VNĐ)</label>
+                            <input type="number" class="form-control" @bind="EditingProduct.Price" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Số lượng tồn kho ban đầu</label>
+                        <input type="number" class="form-control" @bind="EditingProduct.Stock" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModal">Hủy</button>
+                    <button class="btn btn-success" @onclick="SaveProduct">Lưu dữ liệu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ShowDeleteConfirm)
+{
+    <div class="modal fade show d-block" style="background:rgba(0,0,0,.5)">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <h5 class="fw-bold mb-3 text-danger">Xóa sản phẩm này?</h5>
+                    <p class="text-muted">Hành động này sẽ xóa <strong>@DeletingProduct?.Name</strong> khỏi Database vĩnh viễn.</p>
+                    <div class="mt-4">
+                        <button class="btn btn-secondary me-2" @onclick="() => ShowDeleteConfirm = false">Hủy</button>
+                        <button class="btn btn-danger" @onclick="DeleteProduct">Xác nhận Xóa</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Product> products = new();
+    private string SearchTerm = "";
+    private bool IsShowModal;
+    private bool IsEdit;
+    private bool ShowDeleteConfirm;
+
+    private Product EditingProduct = new();
+    private Product? DeletingProduct;
+    protected override void OnInitialized()
+    {
+        LoadData();
+    }
+
+    private void LoadData()
+    {
+        products = Db.Products.OrderByDescending(p => p.Id).ToList();
+    }
+
+    private List<Product> FilteredProducts => products
+        .Where(p => string.IsNullOrWhiteSpace(SearchTerm) ||
+                    p.Name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    (p.SKU != null && p.SKU.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    (p.Brand != null && p.Brand.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)))
+        .ToList();
+
+    private void OpenAddModal()
+    {
+        EditingProduct = new Product();
+        IsEdit = false;
+        IsShowModal = true;
+    }
+
+    private void OpenEditModal(Product p)
+    {
+        EditingProduct = new Product
+        {
+            Id = p.Id,
+            Name = p.Name,
+            SKU = p.SKU,
+            Brand = p.Brand,
+            Storage = p.Storage,
+            Price = p.Price,
+            Stock = p.Stock
+        };
+        IsEdit = true;
+        IsShowModal = true;
+    }
+
+    private void SaveProduct()
+    {
+        if (string.IsNullOrWhiteSpace(EditingProduct.Name)) return;
+
+        if (IsEdit)
+        {
+            var productInDb = Db.Products.FirstOrDefault(x => x.Id == EditingProduct.Id);
+            if (productInDb != null)
+            {
+                productInDb.Name = EditingProduct.Name;
+                productInDb.SKU = EditingProduct.SKU;
+                productInDb.Brand = EditingProduct.Brand;
+                productInDb.Storage = EditingProduct.Storage;
+                productInDb.Price = EditingProduct.Price;
+                productInDb.Stock = EditingProduct.Stock;
+                
+                Db.SaveChanges();
+            }
+        }
+        else
+        {
+            if (string.IsNullOrEmpty(EditingProduct.SKU)) 
+                EditingProduct.SKU = $"SP-{DateTime.Now.Ticks % 10000}";
+
+            Db.Products.Add(EditingProduct);
+            Db.SaveChanges();
+        }
+
+        IsShowModal = false;
+        LoadData();
+    }
+
+    private void ConfirmDelete(Product p)
+    {
+        DeletingProduct = p;
+        ShowDeleteConfirm = true;
+    }
+
+    private void DeleteProduct()
+    {
+        if (DeletingProduct != null)
+        {
+            var productInDb = Db.Products.FirstOrDefault(x => x.Id == DeletingProduct.Id);
+            if (productInDb != null)
+            {
+                Db.Products.Remove(productInDb);
+                Db.SaveChanges();
+            }
+        }
+        ShowDeleteConfirm = false;
+        LoadData();
+    }
+
+    private void CloseModal() => IsShowModal = false;
+
+    private string GetBrandBadgeClass(string brand) => brand switch
+    {
+        "Apple" => "bg-dark text-white",
+        "Samsung" => "bg-primary text-white",
+        "Xiaomi" => "bg-warning text-dark",
+        "Oppo" => "bg-success text-white",
+        "Google" => "bg-secondary text-white",
+        _ => "bg-light text-dark border"
+    };
+}

@@ -2,35 +2,361 @@
 @layout Components.Layout.AdminLayout
 @rendermode InteractiveServer
 
+@using Microsoft.JSInterop
+@using System.Collections.Generic
+@using System.Linq
 
+@inject IJSRuntime JS
 
-<h3>Dashboard</h3>
+<PageTitle>Dashboard - Tổng quan</PageTitle>
 
-<div class="row mt-4">
-    <div class="col-md-4">
-        <div class="card text-bg-primary">
-            <div class="card-body">
-                <h5 class="card-title">Tổng sản phẩm</h5>
-                <p class="display-6">120</p>
+<div class="container-fluid pb-5">
+    <h3 class="fw-bold text-dark mb-4">Dashboard</h3>
+
+    <div class="row mb-5">
+        <div class="col-md-4">
+            <div class="card text-bg-primary shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-white-50">Tổng sản phẩm</h5>
+                    <p class="display-6 fw-bold">120</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-bg-success shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-white-50">Tổng nhập</h5>
+                    <p class="display-6 fw-bold">@TotalImport.ToString("N0")</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card text-bg-danger shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-white-50">Tổng xuất</h5>
+                    <p class="display-6 fw-bold">@TotalExport.ToString("N0")</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card text-bg-success">
-            <div class="card-body">
-                <h5 class="card-title">Tổng nhập</h5>
-                <p class="display-6">$3,500</p>
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <h4 class="fw-bold text-secondary mb-0">📈 Analytics Center</h4>
+
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            @if (viewMode == "custom")
+            {
+                <div class="d-flex gap-2 bg-white p-1 rounded-pill shadow-sm border align-items-center px-3">
+                    <input type="date" class="form-control form-control-sm border-0" style="width: 130px;" @bind="fromDate" />
+                    <span class="text-muted fw-bold">-</span>
+                    <input type="date" class="form-control form-control-sm border-0" style="width: 130px;" @bind="toDate" />
+                    <button class="btn btn-sm btn-primary rounded-circle" @onclick="LoadCustomData">🔍</button>
+                </div>
+            }
+
+            <button class="btn btn-success btn-sm rounded-pill px-3 shadow-sm fw-bold" @onclick="ExportToExcel">
+                📥 Xuất Excel
+            </button>
+
+            <div class="btn-group shadow-sm bg-white rounded-pill p-1">
+                <button class="btn btn-sm rounded-pill px-3 fw-bold @(chartType == "bar" ? "btn-primary" : "btn-light text-muted")"
+                        @onclick='() => ChangeChartType("bar")'>
+                    📊 Cột
+                </button>
+                <button class="btn btn-sm rounded-pill px-3 fw-bold @(chartType == "line" ? "btn-primary" : "btn-light text-muted")"
+                        @onclick='() => ChangeChartType("line")'>
+                    📉 Đường
+                </button>
+            </div>
+
+            <div class="btn-group shadow-sm bg-white rounded-pill p-1">
+                <button class="btn btn-sm rounded-pill px-3 @(viewMode == "day" ? "btn-dark" : "btn-white text-muted")"
+                        @onclick='() => ChangeView("day")'>
+                    Ngày
+                </button>
+                <button class="btn btn-sm rounded-pill px-3 @(viewMode == "month" ? "btn-dark" : "btn-white text-muted")"
+                        @onclick='() => ChangeView("month")'>
+                    Tháng
+                </button>
+                <button class="btn btn-sm rounded-pill px-3 @(viewMode == "year" ? "btn-dark" : "btn-white text-muted")"
+                        @onclick='() => ChangeView("year")'>
+                    Năm
+                </button>
+                <button class="btn btn-sm rounded-pill px-3 @(viewMode == "custom" ? "btn-dark" : "btn-white text-muted")"
+                        @onclick='() => ChangeView("custom")'>
+                    Tùy chỉnh
+                </button>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card text-bg-danger">
-            <div class="card-body">
-                <h5 class="card-title">Tổng xuất</h5>
-                <p class="display-6">$2,800</p>
+    <div class="card shadow-lg border-0 mb-4" style="border-radius: 16px; overflow: hidden;">
+        <div class="card-body p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="text-uppercase text-secondary fw-bold" style="letter-spacing: 1px; font-size: 12px;">
+                    Biểu đồ hoạt động (@GetCurrentModeName())
+                </h6>
+
+                <div class="d-flex gap-4">
+                    <div class="d-flex align-items-center">
+                        <span class="rounded-circle me-2" style="width: 12px; height: 12px; background-color: #3b82f6;"></span>
+                        <span class="fw-bold text-secondary" style="font-size: 13px;">Nhập kho</span>
+                    </div>
+
+                    <div class="d-flex align-items-center">
+                        <span class="rounded-circle me-2" style="width: 12px; height: 12px; background-color: #ef4444;"></span>
+                        <span class="fw-bold text-secondary" style="font-size: 13px;">Xuất kho</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="height: 450px;">
+                <canvas @ref="inventoryChartRef"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 h-100" style="border-radius: 16px;">
+                <div class="card-body">
+                    <h6 class="fw-bold text-dark mb-3">🏆 Top Sản Phẩm Tiêu Biểu (Tháng này)</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="bg-light text-secondary small">
+                                <tr>
+                                    <th class="border-0 rounded-start">Sản phẩm</th>
+                                    <th class="border-0 text-center">Đã xuất</th>
+                                    <th class="border-0 text-end rounded-end">Doanh thu ước tính</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var prod in topProducts)
+                                {
+                                    <tr>
+                                        <td class="fw-bold text-dark">@prod.Name</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">
+                                                @prod.Quantity máy
+                                            </span>
+                                        </td>
+                                        <td class="text-end fw-bold text-success">@prod.Revenue.ToString("N0") ₫</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100" style="border-radius: 16px;">
+                <div class="card-body">
+                    <h6 class="fw-bold text-dark mb-3">🍰 Tỷ Lệ Theo Hãng</h6>
+                    <div style="height: 250px; position: relative;">
+                        <canvas @ref="pieChartRef"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+@code {
+    private ElementReference inventoryChartRef;
+    private ElementReference pieChartRef;
+
+    private string viewMode = "month";
+    private string chartType = "line";
+    private double TotalImport = 0;
+    private double TotalExport = 0;
+    private DateTime fromDate = DateTime.Now.AddDays(-30);
+    private DateTime toDate = DateTime.Now;
+
+    public class ProductInfo
+    {
+        public string Name { get; set; } = "";
+        public int Quantity { get; set; }
+        public decimal Revenue { get; set; }
+    }
+
+    private List<ProductInfo> topProducts = new();
+
+    protected override void OnInitialized()
+    {
+        topProducts = new List<ProductInfo>
+        {
+            new ProductInfo { Name = "iPhone 17 Pro Max", Quantity = 45, Revenue = 1484550000 },
+            new ProductInfo { Name = "Samsung Galaxy S26 Ultra", Quantity = 38, Revenue = 1121000000 },
+            new ProductInfo { Name = "Oppo Find X9", Quantity = 32, Revenue = 496000000 },
+            new ProductInfo { Name = "Xiaomi 16 Pro", Quantity = 25, Revenue = 472500000 },
+            new ProductInfo { Name = "Google Pixel 10", Quantity = 12, Revenue = 252000000 }
+        };
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await RenderChart();
+        if (firstRender || viewMode != "")
+        {
+            await RenderPieChart();
+        }
+    }
+
+    private async Task ChangeView(string mode)
+    {
+        viewMode = mode;
+        StateHasChanged();
+        await RenderChart();
+    }
+
+    private async Task ChangeChartType(string type)
+    {
+        chartType = type;
+        await RenderChart();
+    }
+
+    private async Task LoadCustomData()
+    {
+        await RenderChart();
+    }
+
+    private string GetCurrentModeName() => viewMode switch
+    {
+        "day" => "7 ngày gần nhất",
+        "month" => "12 tháng qua",
+        "year" => "5 năm qua",
+        "custom" => $"{fromDate:dd/MM} - {toDate:dd/MM}",
+        _ => ""
+    };
+
+    private async Task ExportToExcel()
+    {
+        var (labels, dataImport, dataExport) = GetDataByMode(viewMode);
+        var csv = "ThoiGian,NhapKho,XuatKho\n";
+        for (int i = 0; i < labels.Length; i++)
+        {
+            csv += $"{labels[i]},{dataImport[i]},{dataExport[i]}\n";
+        }
+
+        await JS.InvokeVoidAsync("downloadFile", $"BaoCao_Kho_{DateTime.Now:yyyyMMdd}.csv", csv);
+    }
+
+    private async Task RenderChart()
+    {
+        var (labels, dataImport, dataExport) = GetDataByMode(viewMode);
+        TotalImport = dataImport.Sum();
+        TotalExport = dataExport.Sum();
+        StateHasChanged();
+
+        bool isLine = chartType == "line";
+        var config = new
+        {
+            type = chartType,
+            data = new
+            {
+                labels = labels,
+                datasets = new[]
+                {
+                    new {
+                        label = "Nhập kho",
+                        data = dataImport,
+                        fill = isLine,
+                        tension = 0.4,
+                        pointRadius = isLine ? 4 : 0,
+                        backgroundColor = isLine ? "rgba(59, 130, 246, 0.2)" : "#3b82f6",
+                        borderColor = "#3b82f6",
+                        borderWidth = 2,
+                        borderRadius = 4
+                    },
+                    new {
+                        label = "Xuất kho",
+                        data = dataExport,
+                        fill = isLine,
+                        tension = 0.4,
+                        pointRadius = isLine ? 4 : 0,
+                        backgroundColor = isLine ? "rgba(239, 68, 68, 0.2)" : "#ef4444",
+                        borderColor = "#ef4444",
+                        borderWidth = 2,
+                        borderRadius = 4
+                    }
+                }
+            },
+            options = new
+            {
+                responsive = true,
+                maintainAspectRatio = false,
+                plugins = new { legend = new { display = false } },
+                interaction = new { mode = "index", intersect = false },
+                scales = new
+                {
+                    y = new { beginAtZero = true, grid = new { color = "#f3f4f6" }, border = new { display = false } },
+                    x = new { grid = new { display = false }, border = new { display = false } }
+                }
+            }
+        };
+
+        await JS.InvokeVoidAsync("setupChart", inventoryChartRef, config);
+    }
+
+    private async Task RenderPieChart()
+    {
+        var config = new
+        {
+            type = "doughnut",
+            data = new
+            {
+                labels = new[] { "Apple", "Samsung", "Xiaomi", "Oppo", "Google" },
+                datasets = new[]
+                {
+                    new {
+                        data = new[] { 35, 25, 20, 15, 5 },
+                        backgroundColor = new[] { "#212529", "#0d6efd", "#ffc107", "#198754", "#6c757d" },
+                        borderWidth = 0,
+                        hoverOffset = 4
+                    }
+                }
+            },
+            options = new
+            {
+                responsive = true,
+                maintainAspectRatio = false,
+                plugins = new { legend = new { position = "right" } },
+                cutout = "75%"
+            }
+        };
+
+        await JS.InvokeVoidAsync("setupPieChart", pieChartRef, config);
+    }
+
+    private (string[], double[], double[]) GetDataByMode(string mode)
+    {
+        if (mode == "day")
+            return (
+                new[] { "T2", "T3", "T4", "T5", "T6", "T7", "CN" },
+                new double[] { 15, 20, 10, 40, 25, 5, 2 },
+                new double[] { 12, 25, 15, 30, 35, 10, 5 }
+            );
+        else if (mode == "year")
+            return (
+                new[] { "2021", "2022", "2023", "2024", "2025" },
+                new double[] { 1200, 1500, 1100, 1800, 2000 },
+                new double[] { 1150, 1400, 1050, 1750, 1900 }
+            );
+        else if (mode == "custom")
+            return (
+                new[] { "Tuần 1", "Tuần 2", "Tuần 3", "Tuần 4" },
+                new double[] { 50, 60, 45, 70 },
+                new double[] { 40, 65, 55, 60 }
+            );
+        else
+            return (
+                new[] { "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12" },
+                new double[] { 80, 95, 120, 140, 100, 90, 110, 130, 150, 140, 160, 200 },
+                new double[] { 70, 90, 110, 130, 95, 85, 120, 125, 140, 145, 170, 210 }
+            );
+    }
+}
