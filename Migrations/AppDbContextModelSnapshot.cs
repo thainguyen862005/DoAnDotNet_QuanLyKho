@@ -17,12 +17,12 @@ namespace QuanLyKho.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.2")
+                .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("QuanLyKho.Data.InventoryLog", b =>
+            modelBuilder.Entity("QuanLyKho.Models.InventoryLog", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -66,7 +66,7 @@ namespace QuanLyKho.Migrations
                     b.ToTable("InventoryLogs");
                 });
 
-            modelBuilder.Entity("QuanLyKho.Data.Order", b =>
+            modelBuilder.Entity("QuanLyKho.Models.Order", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -105,7 +105,7 @@ namespace QuanLyKho.Migrations
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("QuanLyKho.Data.Product", b =>
+            modelBuilder.Entity("QuanLyKho.Models.Product", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -144,7 +144,7 @@ namespace QuanLyKho.Migrations
                     b.ToTable("Products");
                 });
 
-            modelBuilder.Entity("QuanLyKho.Data.User", b =>
+            modelBuilder.Entity("QuanLyKho.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -198,17 +198,6 @@ namespace QuanLyKho.Migrations
                             Role = 1,
                             Status = "Active",
                             Username = "admin"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Email = "staff@gmail.com",
-                            Password = "123",
-                            Phone = "",
-                            Role = 0,
-                            Status = "Active",
-                            Username = "staff"
                         });
                 });
 #pragma warning restore 612, 618

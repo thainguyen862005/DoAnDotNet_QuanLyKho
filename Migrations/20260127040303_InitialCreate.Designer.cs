@@ -12,20 +12,20 @@ using QuanLyKho.Data;
 namespace QuanLyKho.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260126185534_CreateDatabaseSchema")]
-    partial class CreateDatabaseSchema
+    [Migration("20260127040303_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.2")
+                .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("QuanLyKho.Data.InventoryLog", b =>
+            modelBuilder.Entity("QuanLyKho.Models.InventoryLog", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -69,7 +69,7 @@ namespace QuanLyKho.Migrations
                     b.ToTable("InventoryLogs");
                 });
 
-            modelBuilder.Entity("QuanLyKho.Data.Order", b =>
+            modelBuilder.Entity("QuanLyKho.Models.Order", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -108,7 +108,7 @@ namespace QuanLyKho.Migrations
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("QuanLyKho.Data.Product", b =>
+            modelBuilder.Entity("QuanLyKho.Models.Product", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -147,7 +147,7 @@ namespace QuanLyKho.Migrations
                     b.ToTable("Products");
                 });
 
-            modelBuilder.Entity("QuanLyKho.Data.User", b =>
+            modelBuilder.Entity("QuanLyKho.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -194,24 +194,13 @@ namespace QuanLyKho.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 1, 27, 1, 55, 31, 937, DateTimeKind.Local).AddTicks(9976),
+                            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Email = "admin@gmail.com",
                             Password = "123",
                             Phone = "",
                             Role = 1,
                             Status = "Active",
                             Username = "admin"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2026, 1, 27, 1, 55, 31, 938, DateTimeKind.Local).AddTicks(669),
-                            Email = "staff@gmail.com",
-                            Password = "123",
-                            Phone = "",
-                            Role = 0,
-                            Status = "Active",
-                            Username = "staff"
                         });
                 });
 #pragma warning restore 612, 618

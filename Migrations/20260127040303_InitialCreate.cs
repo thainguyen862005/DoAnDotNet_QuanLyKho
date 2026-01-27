@@ -3,12 +3,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
-
 namespace QuanLyKho.Migrations
 {
     /// <inheritdoc />
-    public partial class CreateDatabaseSchema : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -91,11 +89,7 @@ namespace QuanLyKho.Migrations
             migrationBuilder.InsertData(
                 table: "Users",
                 columns: new[] { "Id", "CreatedAt", "Email", "Password", "Phone", "Role", "Status", "Username" },
-                values: new object[,]
-                {
-                    { 1, new DateTime(2026, 1, 27, 1, 55, 31, 937, DateTimeKind.Local).AddTicks(9976), "admin@gmail.com", "123", "", 1, "Active", "admin" },
-                    { 2, new DateTime(2026, 1, 27, 1, 55, 31, 938, DateTimeKind.Local).AddTicks(669), "staff@gmail.com", "123", "", 0, "Active", "staff" }
-                });
+                values: new object[] { 1, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "admin@gmail.com", "123", "", 1, "Active", "admin" });
         }
 
         /// <inheritdoc />
