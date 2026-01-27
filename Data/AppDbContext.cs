@@ -5,14 +5,16 @@ namespace QuanLyKho.Data
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-        {
-        }
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        public DbSet<User> Users { get; set; }
-        public DbSet<Product> Products { get; set; }
-        public DbSet<InventoryLog> InventoryLogs { get; set; }
-        public DbSet<Order> Orders { get; set; }
+        public DbSet<Brand> Brands => Set<Brand>();
+        public DbSet<Product> Products => Set<Product>();
+        public DbSet<ProductItem> ProductItems => Set<ProductItem>();
+        public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
+        public DbSet<TransactionDetail> TransactionDetails => Set<TransactionDetail>();
+        public DbSet<Supplier> Suppliers => Set<Supplier>();
+        public DbSet<User> Users => Set<User>();
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -22,13 +24,13 @@ namespace QuanLyKho.Data
             modelBuilder.Entity<User>().HasData(
                 new User
                 {
-                    Id = 1,
+                    User_id = 1,
                     Username = "admin",
                     Email = "admin@gmail.com",
-                    Password = "123", // Lưu ý: Thực tế nên mã hóa MD5/BCrypt
-                    Role = 1,
+                    Password_hash = "123", // Lưu ý: Thực tế nên mã hóa MD5/BCrypt
+                    Role = "admin",
                     Status = "Active",
-                    CreatedAt = new DateTime(2024, 1, 1)
+                    CreateAt = new DateTime(2024, 1, 1)
                 }
             );
         }

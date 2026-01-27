@@ -7,25 +7,15 @@ namespace QuanLyKho.Models
     public class User
     {
         [Key]
-        public int Id { get; set; }
+        [Column("User_id")]
+        public int User_id { get; set; }
 
-        [Required, MaxLength(50)]
         public string Username { get; set; } = "";
-
-        [Required, MaxLength(100)]
         public string Email { get; set; } = "";
-
-        [Required, MaxLength(100)]
-        public string Password { get; set; } = "";
-
-        [MaxLength(20)]
-        public string Phone { get; set; } = "";
-
-        public int Role { get; set; } = 0; // 0: Staff, 1: Admin
-
-        [MaxLength(20)]
-        public string Status { get; set; } = "Active";
-
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public string Password_hash { get; set; } = "";
+        public string? Phone { get; set; }
+        public string? Role { get; set; }
+        public string? Status { get; set; }
+        public DateTime CreateAt { get; set; }
     }
 }
