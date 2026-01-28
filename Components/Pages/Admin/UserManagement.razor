@@ -7,68 +7,29 @@
 @using QuanLyKho.Data
 @inject AppDbContext Db
 
-<div class="container-fluid px-4" @onclick="CloseDropdown">
+<div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
         <div>
             <h2 class="fw-bold mb-0 text-gray-800">Quản lý Tài khoản</h2>
-            <p class="text-muted">Kiểm soát nhân viên & phân quyền hệ thống</p>
+            <p class="text-muted">Kiểm soát người dùng & phân quyền hệ thống</p>
+        </div>
+        <div>
+            <button class="btn btn-primary shadow-sm fw-bold" @onclick="OpenCreateModal">
+                <i class="bi bi-person-plus-fill"></i> Thêm tài khoản
+            </button>
         </div>
     </div>
 
     @* Thanh tìm kiếm *@
-    <div class="card border-0 shadow-sm mb-4" style="overflow: visible;" @onclick:stopPropagation>
-        <div class="card-body p-2 position-relative">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-2">
             <div class="input-group border-0">
                 <span class="input-group-text bg-white border-0 text-muted"><i class="bi bi-search"></i></span>
                 <input class="form-control border-0 shadow-none"
-                       placeholder="Tìm kiếm theo tên, email hoặc vai trò..."
+                       placeholder="Tìm kiếm theo tên người dùng hoặc email..."
                        @bind="SearchTerm"
-                       @bind:event="oninput"
-                       @onfocus="OpenDropdown"
-                       @onclick="OpenDropdown" />
+                       @bind:event="oninput" />
             </div>
-
-            @* Dropdown Gợi ý *@
-            @if (showDropdown && FilteredUsers.Any())
-            {
-                <div class="dropdown-menu show w-100 shadow mt-1"
-                     style="max-height: 300px; overflow-y: auto; position: absolute; z-index: 1000; top: 100%; left: 0;">
-
-                    @foreach (var user in FilteredUsers.Take(displayLimit))
-                    {
-                        <button class="dropdown-item border-bottom py-2" @onclick="() => OpenEditModal(user)">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="fw-bold">@user.Username</div>
-                                    <small class="text-muted">@user.Email</small>
-                                </div>
-
-                                @* Badge hiển thị trong tìm kiếm *@
-                                @if (user.Role == "Admin")
-                                {
-                                    <span class="badge bg-danger">Admin</span>
-                                }
-                                else if (user.Role == "Staff")
-                                {
-                                    <span class="badge bg-primary">Staff</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary">@user.Role</span>
-                                }
-                            </div>
-                        </button>
-                    }
-
-                    @if (FilteredUsers.Count() > displayLimit)
-                    {
-                        <button class="dropdown-item text-center text-primary fw-bold py-2"
-                                @onclick="LoadMoreUsers">
-                            <small>▼ Hiển thị thêm kết quả...</small>
-                        </button>
-                    }
-                </div>
-            }
         </div>
     </div>
 
@@ -79,7 +40,7 @@
                 <thead class="bg-light">
                     <tr class="text-secondary small fw-bold text-uppercase">
                         <th class="ps-4 py-3">ID</th>
-                        <th>Tên đăng nhập</th>
+                        <th>Người dùng</th>
                         <th>Email / SĐT</th>
                         <th class="text-center">Vai trò</th>
                         <th class="text-center">Trạng thái</th>
@@ -103,18 +64,13 @@
                                 </td>
 
                                 <td class="text-center">
-                                    @* Cập nhật hiển thị Badge theo Role *@
                                     @if (user.Role == "Admin")
                                     {
                                         <span class="badge bg-danger rounded-pill px-3">Admin</span>
                                     }
-                                    else if (user.Role == "Staff")
-                                    {
-                                        <span class="badge bg-primary rounded-pill px-3">Staff</span>
-                                    }
                                     else
                                     {
-                                        <span class="badge bg-secondary text-light rounded-pill px-3">@user.Role</span>
+                                        <span class="badge bg-info text-dark rounded-pill px-3">User</span>
                                     }
                                 </td>
 
@@ -130,7 +86,7 @@
                                 </td>
 
                                 <td class="text-muted small">
-                                    @user.CreateAt.ToString("dd/MM/yyyy")
+                                    @user.CreateAt.ToString("dd/MM/yyyy HH:mm")
                                 </td>
 
                                 <td class="text-end pe-4">
@@ -159,12 +115,15 @@
             </table>
         </div>
     </div>
+
+    <div class="mt-3 text-muted fst-italic">
+        * Chú thích: Admin là 1, User là 0.
+    </div>
 </div>
 
-@* Modal Thêm/Sửa *@
 @if (IsShowModal)
 {
-    <div class="modal fade show d-block" style="background:rgba(0,0,0,.5);z-index:1050">
+    <div class="modal fade show d-block" style="background:rgba(0,0,0,.5); z-index:1050">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-primary text-white">
@@ -173,7 +132,7 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Tên đăng nhập</label>
+                        <label class="form-label fw-bold">Tên người dùng (Username)</label>
                         <input class="form-control" @bind="EditingUser.Username" placeholder="Nhập username..." />
                     </div>
 
@@ -190,11 +149,10 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Vai trò</label>
-                            @* CHỈ CÒN ADMIN VÀ STAFF *@
+                            <label class="form-label fw-bold">Vai trò (Role)</label>
                             <select class="form-select" @bind="EditingUser.Role">
-                                <option value="Staff">Staff (Nhân viên)</option>
-                                <option value="Admin">Admin (Quản trị)</option>
+                                <option value="0">User (0)</option>
+                                <option value="1">Admin (1)</option>
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
@@ -215,10 +173,9 @@
     </div>
 }
 
-@* Modal Xóa *@
 @if (ShowDeleteConfirm)
 {
-    <div class="modal fade show d-block" style="background:rgba(0,0,0,.5);z-index:1060">
+    <div class="modal fade show d-block" style="background:rgba(0,0,0,.5); z-index:1060">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
                 <div class="modal-body text-center p-4">
@@ -242,10 +199,7 @@
     private bool IsShowModal;
     private bool ShowDeleteConfirm;
 
-    private bool showDropdown = false;
-    private int displayLimit = 10;
-
-    private User EditingUser = new User { Role = "Staff", Status = "Active" };
+    private User EditingUser = new User { Role = "User", Status = "Active" };
     private User? DeletingUser;
 
     private List<User> users = new();
@@ -260,29 +214,17 @@
         users = Db.Users.OrderByDescending(u => u.User_id).ToList();
     }
 
-    private void OpenDropdown()
-    {
-        showDropdown = true;
-        displayLimit = 10;
-    }
-
-    private void CloseDropdown()
-    {
-        Task.Delay(200).ContinueWith(_ => InvokeAsync(() => { showDropdown = false; StateHasChanged(); }));
-    }
-
-    private void LoadMoreUsers()
-    {
-        displayLimit += 10;
-    }
-
     private List<User> FilteredUsers => users
         .Where(u => string.IsNullOrWhiteSpace(SearchTerm) ||
                     u.Username.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    u.Email.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    u.Role.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase))
+                    u.Email.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase))
         .ToList();
 
+    private void OpenCreateModal()
+    {
+        EditingUser = new User { Role = "User", Status = "Active" };
+        IsShowModal = true;
+    }
 
     private void OpenEditModal(User u)
     {
@@ -298,7 +240,6 @@
             Password_hash = u.Password_hash
         };
         IsShowModal = true;
-        showDropdown = false;
     }
 
     private void SaveUser()
@@ -306,8 +247,9 @@
         if (EditingUser.User_id == 0)
         {
             EditingUser.CreateAt = DateTime.Now;
+
             if (string.IsNullOrEmpty(EditingUser.Password_hash))
-                EditingUser.Password_hash = "123";
+                EditingUser.Password_hash = "123"; // nên hash sau
 
             Db.Users.Add(EditingUser);
         }
@@ -333,7 +275,6 @@
     {
         DeletingUser = u;
         ShowDeleteConfirm = true;
-        showDropdown = false;
     }
 
     private void DeleteUser()

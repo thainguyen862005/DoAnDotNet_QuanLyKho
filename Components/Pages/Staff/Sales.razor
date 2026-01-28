@@ -1,5 +1,5 @@
 @page "/staff/sales"
-@layout StaffLayout
+@layout QuanLyKho.Components.Layout.StaffLayout
 @using QuanLyKho.Data
 @using QuanLyKho.Models
 @using Microsoft.EntityFrameworkCore
@@ -8,19 +8,30 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @rendermode InteractiveServer
 
-<PageTitle>Bán hàng (Staff)</PageTitle>
+<PageTitle>Bán hàng</PageTitle>
 
-<div class="container-fluid" @onclick="CloseDropdown">
+<div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+<<<<<<< HEAD
         <h3 class="fw-bold text-gray-800 m-0">Bán Hàng (Staff POS)</h3>
         <span class="badge bg-primary fs-6">@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
+=======
+        <h3 class="fw-bold text-dark m-0">Bán Hàng</h3>
+        <span class="badge bg-primary fs-6">@DateTime.Now.ToString("dd/MM/yyyy")</span>
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
     </div>
 
     <div class="row">
         <div class="col-lg-7">
+<<<<<<< HEAD
             <div class="card shadow border-0 mb-4">
                 <div class="card-header py-3 bg-primary text-white">
                     <h6 class="m-0 fw-bold"><i class="bi bi-search"></i> Tra cứu & Chọn sản phẩm</h6>
+=======
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-primary text-white border-0">
+                    <h6 class="m-0 fw-bold"><i class="bi bi-bag-plus-fill"></i> Thông tin bán hàng</h6>
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
                 </div>
                 <div class="card-body bg-light-subtle">
                     @if (!string.IsNullOrEmpty(errorMessage))
@@ -30,6 +41,7 @@
                         </div>
                     }
 
+<<<<<<< HEAD
                     <div class="row g-2 mb-3">
                         <div class="col-md-4">
                             <label class="form-label fw-bold text-primary">Hãng:</label>
@@ -93,10 +105,25 @@
                                         </li>
                                     }
                                 </ul>
+=======
+                    @* 1. CHỌN SẢN PHẨM *@
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-primary">Chọn sản phẩm:</label>
+                        <select class="form-select border-primary shadow-sm" @onchange="OnProductChange">
+                            <option value="">-- Vui lòng chọn sản phẩm --</option>
+                            @foreach (var item in productItems)
+                            {
+                                <option value="@item.Sp_item_id" disabled="@(item.StockQuantity <= 0)">
+                                    @* Hiển thị Tên - Màu - Dung lượng - Giá *@
+                                    @(item.Product?.Sp_name ?? "Sản phẩm lỗi") (@item.Color - @item.Storage) 
+                                    @if(item.StockQuantity <= 0) { <text> (HẾT HÀNG)</text> }
+                                </option>
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
                             }
-                        </div>
+                        </select>
                     </div>
 
+<<<<<<< HEAD
                     <div class="row g-3 p-3 bg-white rounded border mb-3">
                         <div class="col-md-6">
                             <label class="small fw-bold text-muted">SẢN PHẨM ĐANG CHỌN:</label>
@@ -129,6 +156,70 @@
                             <i class="bi bi-arrow-counterclockwise"></i> Làm mới
                         </button>
                         <button class="btn btn-primary btn-lg px-5 fw-bold shadow" @onclick="ThemVaoGioHang"
+=======
+                    @* 2. HIỂN THỊ THÔNG TIN CHI TIẾT (READONLY) *@
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Hãng sản xuất:</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bi bi-tag"></i></span>
+                                <input class="form-control bg-white" value="@(selectedItem?.Product?.Brand?.Brand_name ?? "---")" readonly disabled />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Đơn giá:</label>
+                        <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bi bi-currency-dollar"></i></span>
+                                <input class="form-control bg-white fw-bold text-success" value="@(selectedItem?.Price.ToString("N0") ?? "0")" readonly disabled />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Tồn kho:</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bi bi-box-seam"></i></span>
+                                <input class="form-control bg-white fw-bold text-danger" 
+                                       value="@(selectedItem != null ? selectedItem.StockQuantity.ToString() : "---")" readonly disabled />
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4 text-muted">
+
+                    @* 3. NHẬP THÔNG TIN GIAO DỊCH *@
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Số lượng mua:</label>
+                            <input type="number" class="form-control border-primary" @bind="soLuong" min="1" max="@(selectedItem?.StockQuantity ?? 1)" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Ngày lập đơn:</label>
+                            <input type="date" class="form-control" @bind="ngayMua" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Khách hàng:</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input class="form-control" @bind="tenKhachHang" placeholder="Nhập tên khách hàng..." />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nhân viên thực hiện:</label>
+                         <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input class="form-control" @bind="nhanVienBan" placeholder="Nhập tên nhân viên..." />
+                        </div>
+                    </div>
+
+                    @* 4. NÚT CHỨC NĂNG *@
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button class="btn btn-outline-secondary" @onclick="LamMoi">
+                            <i class="bi bi-arrow-counterclockwise"></i> Làm mới
+                        </button>
+                            <button class="btn btn-primary px-4 fw-bold shadow" @onclick="ThemVaoGioHang" 
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
                                 disabled="@(selectedItem == null || selectedItem.StockQuantity <= 0)">
                             <i class="bi bi-cart-plus-fill me-2"></i> THÊM VÀO GIỎ
                         </button>
@@ -147,7 +238,7 @@
                     @if (!gioHang.Any())
                     {
                         <div class="text-center text-muted my-auto py-5">
-                            <i class="bi bi-basket3 display-1 opacity-25"></i>
+                            <i class="bi bi-cart-x display-1 opacity-25"></i>
                             <p class="mt-3">Giỏ hàng đang trống</p>
                         </div>
                     }
@@ -157,10 +248,17 @@
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light sticky-top">
                                     <tr>
+<<<<<<< HEAD
                                         <th class="ps-3">Sản phẩm</th>
                                         <th class="text-center" style="width: 100px">SL</th>
                                         <th class="text-end pe-3">Thành tiền</th>
                                         <th></th>
+=======
+                                        <th>Sản phẩm</th>
+                                        <th class="text-center" style="width: 60px">SL</th>
+                                        <th class="text-end">Thành tiền</th>
+                                        <th style="width: 40px"></th>
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -172,16 +270,30 @@
                                                 <small class="text-muted">@item.Price.ToString("N0")</small>
                                             </td>
                                             <td>
+<<<<<<< HEAD
                                                 <input type="number" class="form-control form-control-sm text-center fw-bold"
                                                        value="@item.Quantity"
                                                        @onchange="@(e => UpdateCartQuantity(item, e))" min="1" />
+=======
+                                                <div class="fw-bold text-primary">@item.ProductName</div>
+                                                <small class="text-muted">@item.Price.ToString("N0") đ</small>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-light text-dark border">@item.Quantity</span>
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
                                             </td>
                                             <td class="text-end fw-bold text-primary pe-3">
                                                 @((item.Quantity * item.Price).ToString("N0"))
                                             </td>
+<<<<<<< HEAD
                                             <td class="text-center">
                                                 <button class="btn btn-link text-danger p-0" @onclick="() => XoaKhoiGio(item)">
                                                     <i class="bi bi-trash3-fill"></i>
+=======
+                                                <td class="text-end">
+                                                <button class="btn btn-sm text-danger" @onclick="()=>gioHang.Remove(item)">
+                                                    <i class="bi bi-trash"></i>
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
                                                 </button>
                                             </td>
                                         </tr>
@@ -189,6 +301,7 @@
                                 </tbody>
                             </table>
                         </div>
+<<<<<<< HEAD
 
                         <div class="p-4 bg-light border-top mt-auto">
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -197,6 +310,17 @@
                             </div>
                             <button class="btn btn-success w-100 py-3 fw-bold text-uppercase shadow-sm" @onclick="ThanhToan">
                                 <i class="bi bi-cash-stack me-2"></i> XÁC NHẬN THANH TOÁN
+=======
+                        
+                        <div class="mt-auto pt-3 border-top">
+                            <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+                                <span class="h6 text-muted m-0">Tổng thanh toán:</span>
+                                <span class="h4 text-danger fw-bold m-0">@gioHang.Sum(x => x.Quantity * x.Price).ToString("N0") VNĐ</span>
+                            </div>
+                            
+                            <button class="btn btn-success w-100 py-3 fw-bold text-uppercase shadow" @onclick="ThanhToan">
+                                <i class="bi bi-check-circle-fill me-2"></i> Xác nhận thanh toán
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
                             </button>
                         </div>
                     }
@@ -206,6 +330,7 @@
     </div>
 </div>
 
+<<<<<<< HEAD
 @if (showSuccess)
 {
     <div class="alert alert-success position-fixed top-0 end-0 m-3 shadow-lg border-0 d-flex align-items-center"
@@ -214,23 +339,43 @@
         <div>
             <div class="fw-bold">Thành công!</div>
             <small>Đơn hàng đã được lưu và trừ kho.</small>
+=======
+@* Thông báo thành công *@
+@if(showSuccess) 
+{ 
+    <div class="alert alert-success position-fixed top-0 end-0 m-3 shadow-lg border-0 d-flex align-items-center" style="z-index: 1050; min-width: 320px; animation: slideIn 0.5s ease-out;">
+        <i class="bi bi-check-circle-fill fs-3 me-3"></i>
+        <div>
+            <div class="fw-bold">Thành công!</div>
+            <small>Đã lưu đơn hàng vào hệ thống.</small>
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
         </div>
-    </div>
+    </div> 
 }
 
 @code {
+<<<<<<< HEAD
     public class CartItem
     {
         public int SpItemId { get; set; }
         public string ProductName { get; set; } = "";
         public int Quantity { get; set; }
         public decimal Price { get; set; }
+=======
+    public class CartItem 
+    { 
+        public int SpItemId; 
+        public string ProductName; 
+        public int Quantity; 
+        public decimal Price; 
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
     }
-
+    
+    // Khai báo biến
     private List<ProductItem> productItems = new();
-    private List<Brand> brands = new();
     private List<CartItem> gioHang = new();
     private ProductItem? selectedItem;
+<<<<<<< HEAD
 
     private string searchTerm = "";
     private int? selectedBrandId;
@@ -262,11 +407,31 @@
     {
         brands = await Db.Brands.AsNoTracking().ToListAsync();
         productItems = await Db.ProductItems
+=======
+    
+    private int soLuong = 1; 
+    private DateTime ngayMua = DateTime.Now;
+    private string tenKhachHang = ""; 
+    private string nhanVienBan = ""; 
+    
+    private string errorMessage = ""; 
+    private bool showSuccess = false;
+
+    protected override void OnInitialized() 
+    {
+        LoadData();
+    }
+
+    private void LoadData()
+    {
+        productItems = Db.ProductItems
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
             .Include(x => x.Product)
             .ThenInclude(p => p.Brand)
             .ToListAsync();
     }
 
+<<<<<<< HEAD
     private void OpenDropdown() { showDropdown = true; displayLimit = 10; }
     private async Task CloseDropdown() { await Task.Delay(200); showDropdown = false; }
     private void LoadMoreProducts() => displayLimit += 10;
@@ -276,27 +441,36 @@
         selectedBrandId = int.TryParse(e.Value?.ToString(), out int id) ? id : null;
         selectedItem = null;
         searchTerm = "";
+=======
+    // Sự kiện khi chọn sản phẩm từ dropdown
+    private void OnProductChange(ChangeEventArgs e) {
+        if(int.TryParse(e.Value?.ToString(), out int id)) 
+        {
+            selectedItem = productItems.FirstOrDefault(p => p.Sp_item_id == id);
+            soLuong = 1;
+errorMessage = "";
+        }
+        else
+        {
+            selectedItem = null;
+        }
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
     }
 
-    private void SelectProduct(ProductItem item)
-    {
-        selectedItem = item;
-        searchTerm = item.Product?.Sp_name ?? "";
-        showDropdown = false;
-        soLuong = 1;
-        errorMessage = "";
-    }
-
-    private void LamMoi()
-    {
+    // Nút Làm mới (Reset form)
+    private void LamMoi() {
         selectedItem = null;
-        searchTerm = "";
-        selectedBrandId = null;
         soLuong = 1;
+<<<<<<< HEAD
+=======
+        tenKhachHang = "";
+        ngayMua = DateTime.Now;
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
         errorMessage = "";
         tenKhachHang = "Khách vãng lai";
     }
 
+<<<<<<< HEAD
     private void ThemVaoGioHang()
     {
         if (selectedItem == null || soLuong <= 0) return;
@@ -361,10 +535,55 @@
     private async Task ThanhToan()
     {
         if (!gioHang.Any()) return;
+=======
+    // Thêm vào giỏ
+    private void ThemVaoGioHang() {
+        if(selectedItem == null) return;
+        
+        // Validate tồn kho
+        if(soLuong > selectedItem.StockQuantity) { 
+            errorMessage = $"Kho chỉ còn {selectedItem.StockQuantity} sản phẩm!"; 
+            return; 
+        }
+        
+        // Kiểm tra xem hàng đã có trong giỏ chưa để cộng dồn
+        var existingItem = gioHang.FirstOrDefault(x => x.SpItemId == selectedItem.Sp_item_id);
+        if(existingItem != null)
+        {
+            if(existingItem.Quantity + soLuong > selectedItem.StockQuantity)
+            {
+                errorMessage = "Tổng số lượng trong giỏ vượt quá tồn kho thực tế!";
+                return;
+            }
+            existingItem.Quantity += soLuong;
+        }
+        else
+        {
+            // Thêm mới vào giỏ
+            gioHang.Add(new CartItem {
+                SpItemId = selectedItem.Sp_item_id, 
+                ProductName = $"{selectedItem.Product?.Sp_name} ({selectedItem.Color})", 
+                Quantity = soLuong, 
+                Price = selectedItem.Price
+            });
+        }
+        
+        errorMessage = "";
+    }
+
+    // Thanh toán và Lưu Database
+    private void ThanhToan() {
+        if(gioHang.Count == 0) return;
+        if(string.IsNullOrWhiteSpace(tenKhachHang)) {
+            errorMessage = "Vui lòng nhập tên khách hàng!";
+            return;
+        }
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
 
         using var transaction = await Db.Database.BeginTransactionAsync();
         try
         {
+<<<<<<< HEAD
             // 1. Tạo đơn xuất kho
             var invTrans = new Inventory_Transaction
             {
@@ -382,6 +601,42 @@
                 // Chi tiết giao dịch
                 Db.Transaction_details.Add(new Transaction_detail {
                     TransactionID = invTrans.TransactionID,
+=======
+            var user = Db.Users.FirstOrDefault(u => u.Username == "admin") ?? Db.Users.FirstOrDefault();
+            int userId = user?.User_id ?? 1; 
+
+            var phieuXuat = new InventoryTransaction
+            {
+                UserID = userId,
+                TransactionDate = ngayMua,
+                Type = "Xuất", 
+                Note = $"Bán hàng cho khách: {tenKhachHang}"
+            };
+            
+            Db.InventoryTransactions.Add(phieuXuat);
+            Db.SaveChanges(); 
+
+            foreach(var item in gioHang) {
+                var order = new Order {
+                    CustomerName = tenKhachHang, 
+                    StaffName = nhanVienBan, 
+                    ProductName = item.ProductName, 
+                    Quantity = item.Quantity, 
+                    UnitPrice = item.Price, 
+                    TotalAmount = item.Quantity * item.Price,
+                    OrderDate = ngayMua
+                };
+                Db.Orders.Add(order);
+
+                var p = Db.ProductItems.FirstOrDefault(x => x.Sp_item_id == item.SpItemId);
+                if(p != null) {
+p.StockQuantity -= item.Quantity;
+                }
+
+                var detail = new TransactionDetail
+                {
+                    TransactionID = phieuXuat.TransactionID, 
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
                     Sp_item_ID = item.SpItemId,
                     Quantity = item.Quantity,
                     UnitPrice = item.Price
@@ -392,6 +647,7 @@
                 if (dbItem != null) dbItem.StockQuantity -= item.Quantity;
             }
 
+<<<<<<< HEAD
             await Db.SaveChangesAsync();
             await transaction.CommitAsync();
 
@@ -405,8 +661,21 @@
             await Task.Delay(3000);
             showSuccess = false;
             StateHasChanged();
+=======
+            Db.SaveChanges(); 
+            transaction.Commit();
+
+            // Reset giao diện
+            gioHang.Clear(); 
+            LamMoi();
+            showSuccess = true; 
+            
+            LoadData(); 
+            
+            Task.Delay(3000).ContinueWith(_ => InvokeAsync(() => { showSuccess = false; StateHasChanged(); }));
+>>>>>>> parent of 4efa441 (Nhập kho, bán hàng, lịch sử, trang)
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
             await transaction.RollbackAsync();
             errorMessage = "Lỗi hệ thống: " + ex.Message;
