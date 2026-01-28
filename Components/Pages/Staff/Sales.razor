@@ -3,7 +3,9 @@
 @using QuanLyKho.Data
 @using QuanLyKho.Models
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
 @inject AppDbContext Db
+@inject AuthenticationStateProvider AuthStateProvider
 @rendermode InteractiveServer
 
 <PageTitle>Bán hàng (Staff)</PageTitle>
@@ -11,27 +13,27 @@
 <div class="container-fluid" @onclick="CloseDropdown">
     <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
         <h3 class="fw-bold text-gray-800 m-0">Bán Hàng (Staff POS)</h3>
-        <span class="badge bg-success fs-6">@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
+        <span class="badge bg-primary fs-6">@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
     </div>
 
     <div class="row">
         <div class="col-lg-7">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 bg-success text-white border-0">
-                    <h6 class="m-0 fw-bold"><i class="bi bi-bag-check-fill"></i> Thông tin đơn hàng</h6>
+            <div class="card shadow border-0 mb-4">
+                <div class="card-header py-3 bg-primary text-white">
+                    <h6 class="m-0 fw-bold"><i class="bi bi-search"></i> Tra cứu & Chọn sản phẩm</h6>
                 </div>
                 <div class="card-body bg-light-subtle">
                     @if (!string.IsNullOrEmpty(errorMessage))
                     {
-                        <div class="alert alert-danger shadow-sm">
+                        <div class="alert alert-danger shadow-sm border-start border-5 border-danger">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i> @errorMessage
                         </div>
                     }
 
                     <div class="row g-2 mb-3">
                         <div class="col-md-4">
-                            <label class="form-label fw-bold text-success">Hãng:</label>
-                            <select class="form-select border-success shadow-sm" @onchange="OnBrandFilterChange">
+                            <label class="form-label fw-bold text-primary">Hãng:</label>
+                            <select class="form-select border-primary shadow-sm" @onchange="OnBrandFilterChange">
                                 <option value="">-- Tất cả hãng --</option>
                                 @foreach (var b in brands)
                                 {
@@ -41,10 +43,10 @@
                         </div>
 
                         <div class="col-md-8 position-relative">
-                            <label class="form-label fw-bold text-success">Tìm sản phẩm:</label>
+                            <label class="form-label fw-bold text-primary">Tìm sản phẩm:</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-white border-success"><i class="bi bi-search"></i></span>
-                                <input type="text" class="form-control border-success shadow-sm"
+                                <span class="input-group-text bg-white border-primary"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control border-primary shadow-sm"
                                        placeholder="Nhập tên sản phẩm..."
                                        @bind="searchTerm"
                                        @bind:event="oninput"
@@ -55,8 +57,8 @@
 
                             @if (showDropdown && FilteredProducts.Any())
                             {
-                                <ul class="dropdown-menu show w-100 shadow mt-1"
-                                    style="max-height: 300px; overflow-y: auto; position: absolute; z-index: 1000;">
+                                <ul class="dropdown-menu show w-100 shadow-lg mt-1 border-primary"
+                                    style="max-height: 350px; overflow-y: auto; position: absolute; z-index: 1000;">
                                     @foreach (var item in FilteredProducts.Take(displayLimit))
                                     {
                                         <li>
@@ -64,18 +66,18 @@
                                                     @onclick="() => SelectProduct(item)"
                                                     disabled="@(item.StockQuantity <= 0)">
                                                 <div>
-                                                    <strong>@item.Product?.Sp_name</strong>
-                                                    <small class="text-muted d-block">@item.Color - @item.Storage</small>
+                                                    <strong class="text-dark">@item.Product?.Sp_name</strong>
+                                                    <small class="text-muted d-block">SKU: @item.SKU | @item.Color - @item.Storage</small>
                                                 </div>
                                                 <div class="text-end">
-                                                    <div class="fw-bold text-success">@item.Price.ToString("N0")</div>
+                                                    <div class="fw-bold text-primary">@item.Price.ToString("N0") đ</div>
                                                     @if (item.StockQuantity > 0)
                                                     {
-                                                        <small class="text-primary">Còn: @item.StockQuantity</small>
+                                                        <span class="badge bg-info-subtle text-info">Còn: @item.StockQuantity</span>
                                                     }
                                                     else
                                                     {
-                                                        <span class="badge bg-danger">HẾT HÀNG</span>
+                                                        <span class="badge bg-danger-subtle text-danger">HẾT HÀNG</span>
                                                     }
                                                 </div>
                                             </button>
@@ -86,7 +88,7 @@
                                         <li>
                                             <button class="dropdown-item text-center text-primary fw-bold py-2"
                                                     @onclick="LoadMoreProducts" @onclick:stopPropagation>
-                                                <i class="bi bi-chevron-down"></i> Hiển thị thêm kết quả...
+                                                <i class="bi bi-chevron-down"></i> Hiển thị thêm...
                                             </button>
                                         </li>
                                     }
@@ -95,66 +97,38 @@
                         </div>
                     </div>
 
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Sản phẩm đang chọn:</label>
-                            <input class="form-control bg-white fw-bold"
-                                   value="@(selectedItem != null ? $"{selectedItem.Product?.Sp_name} ({selectedItem.Color})" : "---")"
-                                   readonly disabled />
+                    <div class="row g-3 p-3 bg-white rounded border mb-3">
+                        <div class="col-md-6">
+                            <label class="small fw-bold text-muted">SẢN PHẨM ĐANG CHỌN:</label>
+                            <div class="fw-bold text-dark fs-5">@(selectedItem != null ? $"{selectedItem.Product?.Sp_name} ({selectedItem.Color})" : "Chưa chọn")</div>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Đơn giá:</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white"><i class="bi bi-currency-dollar"></i></span>
-                                <input class="form-control bg-white fw-bold text-success"
-                                       value="@(selectedItem?.Price.ToString("N0") ?? "0")" readonly disabled />
-                            </div>
+                        <div class="col-md-3">
+                            <label class="small fw-bold text-muted">ĐƠN GIÁ:</label>
+                            <div class="fw-bold text-success fs-5">@(selectedItem?.Price.ToString("N0") ?? "0") đ</div>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Tồn kho khả dụng:</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white"><i class="bi bi-box-seam"></i></span>
-                                <input class="form-control bg-white fw-bold text-danger"
-                                       value="@(selectedItem != null ? selectedItem.StockQuantity.ToString() : "---")" readonly disabled />
-                            </div>
+                        <div class="col-md-3">
+                            <label class="small fw-bold text-muted">KHO CÒN:</label>
+                            <div class="fw-bold text-danger fs-5">@(selectedItem?.StockQuantity.ToString() ?? "0")</div>
                         </div>
                     </div>
 
-                    <hr class="my-4 text-muted">
-
-                    <div class="row g-3 mb-3">
+                    <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Số lượng mua:</label>
-                            <input type="number" class="form-control border-success" @bind="soLuong" min="1"
+                            <input type="number" class="form-control form-control-lg border-primary" @bind="soLuong" min="1"
                                    max="@(selectedItem?.StockQuantity ?? 1)" />
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Ngày lập đơn:</label>
-                            <input type="text" class="form-control bg-light" value="@DateTime.Now.ToString("dd/MM/yyyy")" readonly />
+                            <label class="form-label fw-bold">Khách hàng:</label>
+                            <input class="form-control form-control-lg" @bind="tenKhachHang" placeholder="Tên khách hoặc SĐT..." />
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Khách hàng:</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-person"></i></span>
-                            <input class="form-control" @bind="tenKhachHang" placeholder="Nhập tên khách hàng..." />
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Nhân viên thực hiện:</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
-                            <input class="form-control" @bind="nhanVienBan" placeholder="Nhập tên nhân viên..." />
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2 mt-4">
+                    <div class="d-flex justify-content-between align-items-center mt-4">
                         <button class="btn btn-outline-secondary" @onclick="LamMoi">
                             <i class="bi bi-arrow-counterclockwise"></i> Làm mới
                         </button>
-                        <button class="btn btn-success px-4 fw-bold shadow" @onclick="ThemVaoGioHang"
+                        <button class="btn btn-primary btn-lg px-5 fw-bold shadow" @onclick="ThemVaoGioHang"
                                 disabled="@(selectedItem == null || selectedItem.StockQuantity <= 0)">
                             <i class="bi bi-cart-plus-fill me-2"></i> THÊM VÀO GIỎ
                         </button>
@@ -164,13 +138,13 @@
         </div>
 
         <div class="col-lg-5">
-            <div class="card shadow mb-4 h-100">
-                <div class="card-header py-3 bg-warning text-dark d-flex justify-content-between align-items-center border-0">
-                    <h6 class="m-0 fw-bold"><i class="bi bi-cart4"></i> Giỏ hàng hiện tại</h6>
-                    <span class="badge bg-danger rounded-pill">@gioHang.Sum(x => x.Quantity) sản phẩm</span>
+            <div class="card shadow border-0 h-100">
+                <div class="card-header py-3 bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold"><i class="bi bi-cart4"></i> Chi tiết giỏ hàng</h6>
+                    <span class="badge bg-dark rounded-pill">@gioHang.Count dòng</span>
                 </div>
-                <div class="card-body d-flex flex-column">
-                    @if (gioHang.Count == 0)
+                <div class="card-body d-flex flex-column p-0">
+                    @if (!gioHang.Any())
                     {
                         <div class="text-center text-muted my-auto py-5">
                             <i class="bi bi-basket3 display-1 opacity-25"></i>
@@ -179,38 +153,35 @@
                     }
                     else
                     {
-                        <div class="table-responsive flex-grow-1" style="max-height: 400px; overflow-y:auto;">
-                            <table class="table table-hover align-middle">
+                        <div class="table-responsive flex-grow-1" style="max-height: 450px; overflow-y:auto;">
+                            <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light sticky-top">
                                     <tr>
-                                        <th>Sản phẩm</th>
-                                        <th class="text-center" style="width: 80px">SL</th>
-                                        <th class="text-end">Thành tiền</th>
-                                        <th style="width: 60px"></th>
+                                        <th class="ps-3">Sản phẩm</th>
+                                        <th class="text-center" style="width: 100px">SL</th>
+                                        <th class="text-end pe-3">Thành tiền</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var item in gioHang)
                                     {
                                         <tr>
+                                            <td class="ps-3">
+                                                <div class="fw-bold">@item.ProductName</div>
+                                                <small class="text-muted">@item.Price.ToString("N0")</small>
+                                            </td>
                                             <td>
-                                                <div class="fw-bold text-success">@item.ProductName</div>
-                                                <small class="text-muted">@item.Price.ToString("N0") đ</small>
-                                            </td>
-                                            <td class="text-center">
-                                                <input type="number"
-                                                       class="form-control form-control-sm text-center fw-bold border-warning"
-                                                       style="min-width: 70px;"
+                                                <input type="number" class="form-control form-control-sm text-center fw-bold"
                                                        value="@item.Quantity"
-                                                       @onchange="@(e => UpdateCartQuantity(item, e))"
-                                                       min="1" />
+                                                       @onchange="@(e => UpdateCartQuantity(item, e))" min="1" />
                                             </td>
-                                            <td class="text-end fw-bold">
+                                            <td class="text-end fw-bold text-primary pe-3">
                                                 @((item.Quantity * item.Price).ToString("N0"))
                                             </td>
-                                            <td class="text-end">
-                                                <button class="btn btn-sm btn-outline-danger fw-bold" @onclick="() => XoaKhoiGio(item)">
-                                                    Xóa
+                                            <td class="text-center">
+                                                <button class="btn btn-link text-danger p-0" @onclick="() => XoaKhoiGio(item)">
+                                                    <i class="bi bi-trash3-fill"></i>
                                                 </button>
                                             </td>
                                         </tr>
@@ -219,14 +190,13 @@
                             </table>
                         </div>
 
-                        <div class="mt-auto pt-3 border-top">
-                            <div class="d-flex justify-content-between align-items-center mb-3 px-2">
-                                <span class="h6 text-muted m-0">Tổng thanh toán:</span>
-                                <span class="h4 text-danger fw-bold m-0">@gioHang.Sum(x => x.Quantity * x.Price).ToString("N0") VNĐ</span>
+                        <div class="p-4 bg-light border-top mt-auto">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="h6 text-muted mb-0">Tổng tiền thanh toán:</span>
+                                <span class="h3 text-danger fw-bold mb-0">@gioHang.Sum(x => x.Quantity * x.Price).ToString("N0") đ</span>
                             </div>
-
-                            <button class="btn btn-success w-100 py-3 fw-bold text-uppercase shadow" @onclick="ThanhToan">
-                                <i class="bi bi-currency-dollar me-2"></i> THANH TOÁN NGAY
+                            <button class="btn btn-success w-100 py-3 fw-bold text-uppercase shadow-sm" @onclick="ThanhToan">
+                                <i class="bi bi-cash-stack me-2"></i> XÁC NHẬN THANH TOÁN
                             </button>
                         </div>
                     }
@@ -239,11 +209,11 @@
 @if (showSuccess)
 {
     <div class="alert alert-success position-fixed top-0 end-0 m-3 shadow-lg border-0 d-flex align-items-center"
-         style="z-index: 1050; min-width: 320px; animation: slideIn 0.5s ease-out;">
+         style="z-index: 2000; min-width: 300px; border-left: 5px solid #198754 !important;">
         <i class="bi bi-check-circle-fill fs-3 me-3"></i>
         <div>
             <div class="fw-bold">Thành công!</div>
-            <small>Đã tạo đơn hàng thành công.</small>
+            <small>Đơn hàng đã được lưu và trừ kho.</small>
         </div>
     </div>
 }
@@ -251,10 +221,10 @@
 @code {
     public class CartItem
     {
-        public int SpItemId;
-        public string ProductName;
-        public int Quantity;
-        public decimal Price;
+        public int SpItemId { get; set; }
+        public string ProductName { get; set; } = "";
+        public int Quantity { get; set; }
+        public decimal Price { get; set; }
     }
 
     private List<ProductItem> productItems = new();
@@ -265,78 +235,46 @@
     private string searchTerm = "";
     private int? selectedBrandId;
     private bool showDropdown = false;
-    private int displayLimit = 5;
+    private int displayLimit = 10;
 
     private int soLuong = 1;
-    private string tenKhachHang = "";
+    private string tenKhachHang = "Khách vãng lai";
     private string nhanVienBan = "";
     private string errorMessage = "";
     private bool showSuccess = false;
 
-    private IEnumerable<ProductItem> FilteredProducts
+    private IEnumerable<ProductItem> FilteredProducts => 
+        productItems.Where(p => 
+            (!selectedBrandId.HasValue || p.Product?.Brands_id == selectedBrandId) &&
+            (string.IsNullOrWhiteSpace(searchTerm) || 
+             (p.Product?.Sp_name?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+             (p.SKU?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
+        );
+
+    protected override async Task OnInitializedAsync()
     {
-        get
-        {
-            var query = productItems.AsEnumerable();
-
-            if (selectedBrandId.HasValue)
-            {
-                query = query.Where(p => p.Product?.Brands_id == selectedBrandId);
-            }
-
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                query = query.Where(p =>
-                    (p.Product?.Sp_name?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (p.Product?.Brand?.Brand_name?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
-                );
-            }
-            return query;
-        }
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        nhanVienBan = authState.User.Identity?.Name ?? "Staff";
+        await LoadData();
     }
 
-    protected override void OnInitialized()
+    private async Task LoadData()
     {
-        LoadData();
-    }
-
-    private void LoadData()
-    {
-        brands = Db.Brands.ToList();
-        productItems = Db.ProductItems
+        brands = await Db.Brands.AsNoTracking().ToListAsync();
+        productItems = await Db.ProductItems
             .Include(x => x.Product)
             .ThenInclude(p => p.Brand)
-            .ToList();
+            .ToListAsync();
     }
 
-    private void OpenDropdown()
-    {
-        showDropdown = true;
-        displayLimit = 5;
-    }
-
-    private void CloseDropdown()
-    {
-        Task.Delay(200).ContinueWith(_ => InvokeAsync(() => { showDropdown = false; StateHasChanged(); }));
-    }
-
-    private void LoadMoreProducts()
-    {
-        displayLimit += 5;
-    }
+    private void OpenDropdown() { showDropdown = true; displayLimit = 10; }
+    private async Task CloseDropdown() { await Task.Delay(200); showDropdown = false; }
+    private void LoadMoreProducts() => displayLimit += 10;
 
     private void OnBrandFilterChange(ChangeEventArgs e)
     {
-        if (int.TryParse(e.Value?.ToString(), out int id))
-        {
-            selectedBrandId = id;
-        }
-        else
-        {
-            selectedBrandId = null;
-        }
+        selectedBrandId = int.TryParse(e.Value?.ToString(), out int id) ? id : null;
         selectedItem = null;
-        soLuong = 1;
         searchTerm = "";
     }
 
@@ -355,30 +293,33 @@
         searchTerm = "";
         selectedBrandId = null;
         soLuong = 1;
-        tenKhachHang = "";
         errorMessage = "";
+        tenKhachHang = "Khách vãng lai";
     }
 
     private void ThemVaoGioHang()
     {
-        if (selectedItem == null) return;
-        if (soLuong <= 0) return;
+        if (selectedItem == null || soLuong <= 0) return;
 
         if (soLuong > selectedItem.StockQuantity)
         {
-            errorMessage = $"Kho chỉ còn {selectedItem.StockQuantity} sản phẩm!";
+            errorMessage = $"Sản phẩm '{selectedItem.Product?.Sp_name}' chỉ còn {selectedItem.StockQuantity} trong kho!";
             return;
         }
 
-        var existingItem = gioHang.FirstOrDefault(x => x.SpItemId == selectedItem.Sp_item_id);
-        if (existingItem != null)
+        var existing = gioHang.FirstOrDefault(x => x.SpItemId == selectedItem.Sp_item_id);
+        if (existing != null)
         {
-            existingItem.Quantity += soLuong;
+            if (existing.Quantity + soLuong > (selectedItem.StockQuantity + existing.Quantity))
+            {
+                errorMessage = "Tổng số lượng trong giỏ vượt quá tồn kho!";
+                return;
+            }
+            existing.Quantity += soLuong;
         }
         else
         {
-            gioHang.Add(new CartItem
-            {
+            gioHang.Add(new CartItem {
                 SpItemId = selectedItem.Sp_item_id,
                 ProductName = $"{selectedItem.Product?.Sp_name} ({selectedItem.Color})",
                 Quantity = soLuong,
@@ -387,116 +328,96 @@
         }
 
         selectedItem.StockQuantity -= soLuong;
-        soLuong = 1;
         errorMessage = "";
     }
 
     private void XoaKhoiGio(CartItem item)
     {
         gioHang.Remove(item);
-
-        var sourceItem = productItems.FirstOrDefault(p => p.Sp_item_id == item.SpItemId);
-        if (sourceItem != null)
-        {
-            sourceItem.StockQuantity += item.Quantity;
-        }
+        var source = productItems.FirstOrDefault(p => p.Sp_item_id == item.SpItemId);
+        if (source != null) source.StockQuantity += item.Quantity;
     }
 
     private void UpdateCartQuantity(CartItem item, ChangeEventArgs e)
     {
-        if (int.TryParse(e.Value?.ToString(), out int newQty))
+        if (int.TryParse(e.Value?.ToString(), out int newQty) && newQty >= 1)
         {
-            if (newQty < 1) return;
-
-            int diff = newQty - item.Quantity;
-
-            var sourceItem = productItems.FirstOrDefault(p => p.Sp_item_id == item.SpItemId);
-            if (sourceItem != null)
+            var source = productItems.FirstOrDefault(p => p.Sp_item_id == item.SpItemId);
+            if (source != null)
             {
-                if (diff > 0 && sourceItem.StockQuantity < diff)
+                int currentTotalPool = source.StockQuantity + item.Quantity;
+                if (newQty > currentTotalPool)
                 {
-                    errorMessage = $"Không đủ hàng! Chỉ còn {sourceItem.StockQuantity} trong kho.";
+                    errorMessage = "Số lượng yêu cầu vượt quá kho!";
                     return;
                 }
-
-                sourceItem.StockQuantity -= diff;
+                source.StockQuantity = currentTotalPool - newQty;
                 item.Quantity = newQty;
                 errorMessage = "";
             }
         }
     }
 
-    private void ThanhToan()
+    private async Task ThanhToan()
     {
-        if (gioHang.Count == 0) return;
-        if (string.IsNullOrWhiteSpace(tenKhachHang) || string.IsNullOrWhiteSpace(nhanVienBan))
-        {
-            errorMessage = "Vui lòng nhập tên Khách hàng và Nhân viên!";
-            return;
-        }
+        if (!gioHang.Any()) return;
 
-        using var transaction = Db.Database.BeginTransaction();
+        using var transaction = await Db.Database.BeginTransactionAsync();
         try
         {
-            var user = Db.Users.FirstOrDefault(u => u.Role == "Staff") ?? Db.Users.FirstOrDefault();
-            int userId = user?.User_id ?? 1;
-            DateTime now = DateTime.Now;
-
-            var phieuXuat = new InventoryTransaction
+            // 1. Tạo đơn xuất kho
+            var invTrans = new Inventory_Transaction
             {
-                UserID = userId,
-                TransactionDate = now,
+                UserID = Db.Users.FirstOrDefault(u => u.Username == nhanVienBan)?.User_id,
+                TransactionDate = DateTime.Now,
                 Type = "Xuất",
-                Note = $"Nhân viên {nhanVienBan} bán cho khách: {tenKhachHang}"
+                Note = $"POS Staff: {nhanVienBan} bán cho {tenKhachHang}"
             };
+            Db.Inventory_Transactions.Add(invTrans);
+            await Db.SaveChangesAsync();
 
-            Db.InventoryTransactions.Add(phieuXuat);
-            Db.SaveChanges();
-
+            // 2. Lưu chi tiết & Cập nhật kho thật
             foreach (var item in gioHang)
             {
-                var order = new Order
-                {
-                    CustomerName = tenKhachHang,
-                    StaffName = nhanVienBan,
-                    ProductName = item.ProductName,
-                    Quantity = item.Quantity,
-                    UnitPrice = item.Price,
-                    TotalAmount = item.Quantity * item.Price,
-                    OrderDate = now
-                };
-                Db.Orders.Add(order);
-
-                var p = Db.ProductItems.FirstOrDefault(x => x.Sp_item_id == item.SpItemId);
-                if (p != null)
-                {
-                    p.StockQuantity -= item.Quantity;
-                }
-
-                var detail = new TransactionDetail
-                {
-                    TransactionID = phieuXuat.TransactionID,
+                // Chi tiết giao dịch
+                Db.Transaction_details.Add(new Transaction_detail {
+                    TransactionID = invTrans.TransactionID,
                     Sp_item_ID = item.SpItemId,
                     Quantity = item.Quantity,
                     UnitPrice = item.Price
-                };
-                Db.TransactionDetails.Add(detail);
+                });
+
+                // Trừ tồn kho trong DB
+                var dbItem = await Db.ProductItems.FindAsync(item.SpItemId);
+                if (dbItem != null) dbItem.StockQuantity -= item.Quantity;
             }
 
-            Db.SaveChanges();
-            transaction.Commit();
+            await Db.SaveChangesAsync();
+            await transaction.CommitAsync();
 
+            // Reset UI
             gioHang.Clear();
             LamMoi();
             showSuccess = true;
-            LoadData();
+            await LoadData();
+            StateHasChanged();
 
-            Task.Delay(3000).ContinueWith(_ => InvokeAsync(() => { showSuccess = false; StateHasChanged(); }));
+            await Task.Delay(3000);
+            showSuccess = false;
+            StateHasChanged();
         }
         catch (Exception ex)
         {
-            transaction.Rollback();
-            errorMessage = "Lỗi thanh toán: " + ex.Message;
+            await transaction.RollbackAsync();
+            errorMessage = "Lỗi hệ thống: " + ex.Message;
         }
     }
 }
+
+<style>
+    .dropdown-item:hover { background-color: #f0f7ff; }
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+</style>

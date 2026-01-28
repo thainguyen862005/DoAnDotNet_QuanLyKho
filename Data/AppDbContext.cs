@@ -19,6 +19,7 @@ namespace QuanLyKho.Data
         public DbSet<TransactionDetail> TransactionDetails { get; set; }
         public DbSet<OrderDetail> OrderDetails { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
+        public DbSet<Supplier> Suppliers { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
