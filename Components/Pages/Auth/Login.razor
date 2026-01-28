@@ -14,7 +14,6 @@
 
 <style>
     .login-bg {
-        /* Gradient xanh dương nhẹ */
         background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
         min-height: 100vh;
     }
@@ -22,12 +21,10 @@
     .card-login {
         border: none;
         border-radius: 1rem;
-        /* Bo góc mềm mại */
     }
 
     .btn-login {
         background-color: #1976d2;
-        /* Xanh đậm hơn chút để nổi bật */
         border: none;
         padding: 12px;
         font-weight: 600;
@@ -98,8 +95,6 @@
 </div>
 
 @code {
-    // --- GIỮ NGUYÊN 100% LOGIC CŨ CỦA BẠN ---
-
     private string username = "";
     private string password = "";
     private string errorMessage = "";
@@ -108,6 +103,7 @@
     {
         errorMessage = "";
 
+        // Kiểm tra đầu vào
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
         {
             errorMessage = "Vui lòng nhập đầy đủ Tài khoản và Mật khẩu!";
@@ -116,28 +112,28 @@
 
         try
         {
-            // 1. Mã hóa pass người dùng nhập để so sánh
+            // Hash mật khẩu để so sánh
             string passwordHash = GetMD5Hash(password);
 
-            // 2. Kiểm tra trong Database
+            // Tìm user trong DB khớp thông tin
             var user = await DbContext.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Username == username && u.Password_hash == passwordHash);
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Username == username && u.Password_hash == passwordHash);
 
-            // Nếu không tìm thấy hoặc sai pass
             if (user == null)
             {
                 errorMessage = "Sai tài khoản hoặc mật khẩu!";
                 return;
             }
 
+            // Kiểm tra trạng thái tài khoản
             if (user.Status != "Active")
             {
                 errorMessage = "Tài khoản đang bị khóa!";
                 return;
             }
 
-            // 3. Cập nhật trạng thái đăng nhập (Ghi nhớ User)
+            // Lưu trạng thái đăng nhập
             var customAuthStateProvider = (CustomAuthenticationStateProvider)AuthStateProvider;
             await customAuthStateProvider.UpdateAuthenticationState(new UserSession
             {
@@ -145,12 +141,9 @@
                 Role = user.Role
             });
 
-            // 4. KIỂM TRA ROLE ĐỂ ĐIỀU HƯỚNG
-            // Chuyển role về chữ thường và cắt khoảng trắng để so sánh chính xác
+            // Điều hướng theo vai trò (Role)
             string role = user.Role?.Trim().ToLower() ?? "";
 
-            // Logic: Admin(1) -> Dashboard, Staff(0) -> Sale
-            // Code này hỗ trợ cả nếu bạn lưu trong DB là chữ "admin" hoặc số "1"
             if (role == "admin" || role == "1")
             {
                 Nav.NavigateTo("/admin/dashboard", forceLoad: false);
@@ -161,7 +154,6 @@
             }
             else
             {
-                // Role lạ hoặc chưa phân quyền -> Về trang chủ
                 Nav.NavigateTo("/", forceLoad: false);
             }
         }
@@ -171,6 +163,7 @@
         }
     }
 
+    // Hàm băm mật khẩu MD5
     private string GetMD5Hash(string input)
     {
         using (MD5 md5 = MD5.Create())
