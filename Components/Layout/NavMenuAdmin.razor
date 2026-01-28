@@ -1,132 +1,96 @@
 @inject NavigationManager Navigation
 
-<nav class="nav flex-column p-3 sidebar sticky-top">
+<nav class="sidebar d-flex flex-column">
+    <div class="p-3 border-bottom border-secondary">
+        <h5 class="text-center mb-0">ADMIN</h5>
+    </div>
 
-    <h5 class="text-center mb-4 border-bottom pb-2">ADMIN</h5>
-
-    <div class="flex-grow-1 overflow-y-auto mb-3 custom-scrollbar">
-        
+    <div class="flex-grow-1 overflow-y-auto custom-scrollbar p-3">
         <NavLink class="nav-link sidebar-link" href="/admin/dashboard" Match="NavLinkMatch.All">
             📊 Dashboard
         </NavLink>
-
         <NavLink class="nav-link sidebar-link" href="/admin/products">
             📦 Quản lý sản phẩm
         </NavLink>
-
         <NavLink class="nav-link sidebar-link" href="/admin/import">
             ➕ Nhập kho 
         </NavLink>
-
         <NavLink class="nav-link sidebar-link" href="/admin/sales-admin">
             🧾 Bán hàng
         </NavLink>
-
-    <NavLink class="nav-link sidebar-link" href="/admin/user-management">
-        📋 Quản lý người dùng
-    </NavLink>
-
-    <NavLink class="nav-link sidebar-link" href="/admin/stock-check">
-        ✅ Kiểm kê kho
-    </NavLink>
-
-     <NavLink class="nav-link sidebar-link" href="/admin/history">  
-        🕒 Lịch sử 
-    </NavLink>
-    
-    <!-- LOGOUT -->
-    <div class="mt-auto">
-        <hr class="text-secondary">
-
-        <NavLink href="/login" class="logout-btn">
-            🚪 Đăng xuất
+        <NavLink class="nav-link sidebar-link" href="/admin/user-management">
+            📋 Quản lý người dùng
+        </NavLink>
+        <NavLink class="nav-link sidebar-link" href="/admin/stock-check">
+            ✅ Kiểm kê kho
+        </NavLink>
+        <NavLink class="nav-link sidebar-link" href="/admin/history">  
+            🕒 Lịch sử 
         </NavLink>
     </div>
-</div>
+    
+    <div class="p-3 mt-auto border-top border-secondary">
+        <NavLink href="/login" class="logout-btn-custom">
+            <span class="me-2">🚪</span> Đăng xuất
+        </NavLink>
+    </div>
 </nav>
 
 <style>
-    /* SIDEBAR */
     .sidebar {
+        position: fixed;    /* Ghim cố định vào khung hình */
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 250px;
         background-color: #212529;
-        width: 250px;       /* Nên cố định chiều rộng */
-        height: 100vh;      /* Chiều cao bằng đúng màn hình */
-        top: 0;             /* Dính sát mép trên */
-        overflow: hidden;   /* Ẩn thanh cuộn của chính sidebar */
+        z-index: 1000;
+        height: 100vh;      /* Full chiều cao màn hình */
     }
 
-    .text-center {
-        text-align: center !important;
-        color: white;
+    /* Nút Đăng xuất theo ảnh mẫu */
+    .logout-btn-custom {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 12px;
+        background-color: transparent; 
+        color: #dc3545;               /* Màu đỏ danger */
+        border: 1px solid #dc3545;    /* Viền đỏ */
+        border-radius: 8px;           /* Bo góc nhẹ */
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
     }
 
-    /* Tùy chỉnh thanh cuộn cho đẹp (ẩn thanh cuộn thô kệch mặc định) */
+    .logout-btn-custom:hover {
+        background-color: rgba(220, 53, 69, 0.1);
+        border-color: #ff4d5e;
+        color: #ff4d5e;
+    }
+
+    /* Tùy chỉnh thanh cuộn cho phần menu nội bộ */
     .custom-scrollbar::-webkit-scrollbar {
         width: 4px;
     }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: rgba(255,255,255,0.05); 
-    }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #6c757d; 
-        border-radius: 4px;
+        background: #495057; 
+        border-radius: 10px;
     }
 
-    /* LINKS */
+    /* Style cho link menu */
     .sidebar-link {
         color: #dee2e6;
+        text-decoration: none;
+        padding: 10px 15px;
+        display: block;
+        margin-bottom: 5px;
         border-radius: 6px;
-        margin-bottom: 6px;
-        padding: 10px 12px;
-        transition: all 0.2s ease;
-        display: block; /* Đảm bảo link chiếm full dòng */
     }
-
-    .sidebar-link:hover {
-        background-color: rgba(255, 255, 255, 0.15);
-        color: #fff;
-    }
-
     .sidebar-link.active {
         background-color: #0d6efd;
-        color: #fff;
-        font-weight: 500;
-    }
-
-    .sidebar-link:focus {
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.5);
-    }
-
-    /* LOGOUT BUTTON */
-    .logout-btn {
-        display: block;
-        width: 100%;
-        padding: 12px 16px;
-        /* margin-top: 12px; -> Không cần nữa vì đã có mt-auto ở div cha */
-        text-align: center;
-        font-weight: 500;
-        border-radius: 8px;
-        text-decoration: none;
-        color: #dc3545;
-        border: 1px solid #dc3545;
-        background-color: transparent;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .logout-btn:hover {
-        background-color: #dc3545;
-        color: #fff;
-    }
-
-    .logout-btn:focus-visible {
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.4);
-    }
-
-    .logout-btn:active {
-        transform: scale(0.97);
+        color: white;
     }
 </style>
 

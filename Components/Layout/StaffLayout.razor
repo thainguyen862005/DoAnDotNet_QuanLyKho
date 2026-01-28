@@ -1,27 +1,26 @@
 @inherits LayoutComponentBase
 
-<div class="d-flex">
-    <!-- Sidebar -->
-    <StaffSidebar />
+<div class="d-flex vh-100 overflow-hidden">
+    <div class="flex-shrink-0 h-100 overflow-auto border-end">
+        <StaffSidebar />
+    </div>
 
-    <!-- Main -->
-    <div class="flex-grow-1">
-        <!-- Header -->
-        <header class="staff-header shadow-sm px-4 py-3 d-flex justify-content-between align-items-center">
+    <div class="flex-grow-1 d-flex flex-column h-100 overflow-hidden">
+        
+        <header class="staff-header shadow-sm px-4 py-3 d-flex justify-content-between align-items-center bg-white">
             <h5 class="mb-0">NHÂN VIÊN BÁN HÀNG</h5>
 
             <div class="d-flex align-items-center gap-2">
                 <img src="https://cdn-icons-png.flaticon.com/512/9131/9131529.png" 
-     alt="Avatar" 
-     class="rounded-circle border" 
-     width="40" 
-     height="40" />
-                <span> Staff</span>
+                     alt="Avatar" 
+                     class="rounded-circle border" 
+                     width="40" 
+                     height="40" />
+                <span>Staff</span>
             </div>
         </header>
 
-        <!-- Content -->
-        <main class="p-4">
+        <main class="p-4 overflow-auto flex-grow-1">
             @Body
         </main>
     </div>
