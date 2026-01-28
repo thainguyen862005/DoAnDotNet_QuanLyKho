@@ -10,11 +10,11 @@
 
 <PageTitle>Kiểm kê kho</PageTitle>
 
-<div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+<div class="container-fluid px-4 h-100 d-flex flex-column">
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
         <div>
             <h2 class="fw-bold mb-0 text-dark">Kiểm Kê Kho</h2>
-            <p class="text-muted">Đối chiếu tồn kho hệ thống và thực tế</p>
+            <p class="text-muted mb-0">Đối chiếu tồn kho hệ thống và thực tế</p>
         </div>
         <div class="d-flex gap-2">
             <button class="btn btn-warning fw-bold shadow-sm" @onclick="ResetForm">
@@ -26,7 +26,7 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm mb-4 bg-white">
+    <div class="card border-0 shadow-sm mb-3 bg-white flex-shrink-0">
         <div class="card-body p-3">
             <input type="text" class="form-control border-0 bg-light"
                    placeholder="Tìm sản phẩm để kiểm kê..."
@@ -35,17 +35,18 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm">
-        <div class="table-responsive">
+    <div class="card border-0 shadow-sm flex-grow-1 overflow-hidden" style="min-height: 0;">
+
+        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
             <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
+                <thead class="bg-light" style="position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                     <tr class="fw-bold text-secondary small text-uppercase">
-                        <th class="ps-4">Sản phẩm</th>
-                        <th>Mã SKU</th>
-                        <th class="text-center">Tồn trên máy</th>
-                        <th class="text-center" style="width: 150px;">Thực tế (Nhập)</th>
-                        <th class="text-center">Chênh lệch</th>
-                        <th class="text-center">Trạng thái</th>
+                        <th class="ps-4 bg-light">Sản phẩm</th>
+                        <th class="bg-light">Mã SKU</th>
+                        <th class="text-center bg-light">Tồn trên máy</th>
+                        <th class="text-center bg-light" style="width: 150px;">Thực tế (Nhập)</th>
+                        <th class="text-center bg-light">Chênh lệch</th>
+                        <th class="text-center bg-light pe-3">Trạng thái</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -70,7 +71,7 @@
                                 <td class="text-center fw-bold @(item.Difference < 0 ? "text-danger" : (item.Difference > 0 ? "text-success" : "text-muted"))">
                                     @(item.Difference > 0 ? "+" : "")@item.Difference
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center pe-3">
                                     @if (item.Difference == 0)
                                     {
                                         <span class="badge bg-success-subtle text-success rounded-pill px-3">Khớp</span>
@@ -98,17 +99,15 @@
 </div>
 
 @code {
-    // ViewModel để quản lý dữ liệu trên giao diện
+    // ViewModel
     public class StockCheckItem
     {
         public int SpItemId { get; set; }
         public string ProductName { get; set; } = "";
         public string Brand { get; set; } = "";
         public string SKU { get; set; } = "";
-        public int SystemStock { get; set; } // Tồn kho hiện tại trong DB
-        public int ActualStock { get; set; } // Số lượng nhập thực tế
-
-        // Tự động tính chênh lệch
+        public int SystemStock { get; set; }
+        public int ActualStock { get; set; }
         public int Difference => ActualStock - SystemStock;
     }
 
@@ -122,7 +121,6 @@
 
     private void LoadData()
     {
-        // Lấy dữ liệu từ DB và map sang ViewModel
         itemList = Db.ProductItems
             .Include(i => i.Product)
             .ThenInclude(p => p.Brand)
@@ -133,12 +131,11 @@
                 Brand = i.Product.Brand.Brand_name,
                 SKU = i.SKU,
                 SystemStock = i.StockQuantity,
-                ActualStock = i.StockQuantity // Mặc định ban đầu Thực tế = Hệ thống
+                ActualStock = i.StockQuantity
             })
             .ToList();
     }
 
-    // Lọc danh sách theo từ khóa tìm kiếm
     private IEnumerable<StockCheckItem> FilteredList =>
         itemList.Where(x => string.IsNullOrWhiteSpace(searchTerm) ||
                             x.ProductName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
@@ -152,7 +149,6 @@
 
     private async Task CanBangKho()
     {
-        // Lọc ra các sản phẩm có sự chênh lệch
         var diffItems = itemList.Where(x => x.Difference != 0).ToList();
 
         if (!diffItems.Any())
@@ -167,10 +163,9 @@
         using var transaction = Db.Database.BeginTransaction();
         try
         {
-            // 1. Tạo phiếu ghi nhận lịch sử kiểm kê (Dùng bảng Transaction)
             var inventoryTrans = new InventoryTransaction
             {
-                UserID = 1, // Admin ID
+                UserID = 1,
                 Type = "Kiểm kê",
                 TransactionDate = DateTime.Now,
                 Note = $"Cân bằng kho ngày {DateTime.Now:dd/MM/yyyy}. Có {diffItems.Count} mục điều chỉnh."
@@ -178,24 +173,18 @@
             Db.InventoryTransactions.Add(inventoryTrans);
             await Db.SaveChangesAsync();
 
-            // 2. Cập nhật tồn kho và lưu chi tiết
             foreach (var item in diffItems)
             {
-                // Tìm sản phẩm trong DB
                 var dbItem = await Db.ProductItems.FindAsync(item.SpItemId);
                 if (dbItem != null)
                 {
-                    // Update số lượng mới
                     dbItem.StockQuantity = item.ActualStock;
 
-                    // Lưu log chi tiết: Số lượng ghi vào TransactionDetail là số chênh lệch
-                    // Ví dụ: Hệ thống 10, Thực tế 8 => Chênh -2 (Xuất 2)
-                    // Hệ thống 10, Thực tế 12 => Chênh +2 (Nhập 2)
                     var detail = new TransactionDetail
                     {
                         TransactionID = inventoryTrans.TransactionID,
                         Sp_item_ID = item.SpItemId,
-                        Quantity = Math.Abs(item.Difference), // Lưu số lượng thay đổi tuyệt đối
+                        Quantity = Math.Abs(item.Difference),
                         UnitPrice = dbItem.Price
                     };
                     Db.TransactionDetails.Add(detail);
@@ -206,7 +195,7 @@
             await transaction.CommitAsync();
 
             await JS.InvokeVoidAsync("alert", "Cân bằng kho thành công!");
-            LoadData(); // Load lại dữ liệu mới nhất
+            LoadData();
         }
         catch (Exception ex)
         {

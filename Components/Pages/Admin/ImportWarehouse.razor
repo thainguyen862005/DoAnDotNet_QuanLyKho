@@ -9,7 +9,13 @@
 <PageTitle>Nhập kho</PageTitle>
 
 <div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Nhập Kho (Admin)</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 m-0 text-gray-800">Nhập Kho (Admin)</h1>
+        <span class="badge bg-primary fs-6">
+            @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+        </span>
+    </div>
+
 
     @if (!string.IsNullOrEmpty(successMessage))
     {

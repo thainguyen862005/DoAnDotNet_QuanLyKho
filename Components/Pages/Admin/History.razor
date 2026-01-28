@@ -167,19 +167,24 @@
             {
                 TransactionId = t.TransactionID,
                 CreatedAt = t.TransactionDate,
-                Type = t.Type,
-                StaffName = t.User.Username,
+                Type = t.Type ?? "",
+                StaffName = t.User != null
+                            ? (t.User.Username ?? t.User.Username ?? "Admin")
+                            : "Admin",
                 SupplierName = t.Supplier != null ? t.Supplier.SupplierName : "",
                 ReceiptCode = "PN-" + t.TransactionID.ToString("0000")
-            }).ToList();
+            })
+            .ToList();
     }
 
+
     private IEnumerable<HistoryViewModel> FilteredLogs =>
-        logs.Where(h =>
-            (string.IsNullOrWhiteSpace(StaffSearch) ||
-             h.StaffName.Contains(StaffSearch, StringComparison.OrdinalIgnoreCase)) &&
-            (string.IsNullOrWhiteSpace(TypeFilter) || h.Type == TypeFilter)
-        );
+    logs.Where(h =>
+        (string.IsNullOrWhiteSpace(StaffSearch) ||
+         h.StaffName.Contains(StaffSearch.Trim(), StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrWhiteSpace(TypeFilter) || h.Type == TypeFilter)
+    );
+
 
     private void XemPhieu(HistoryViewModel log)
     {
